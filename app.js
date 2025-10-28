@@ -16,7 +16,8 @@ const AppState = {
     mediaRecorder: null,
     audioChunks: [],
     audioBlob: null,
-    selectedDate: null // Current selected date (null = today)
+    selectedDate: null, // Current selected date (null = today)
+    isChangingDate: false // Prevent rapid date changes
 };
 
 // =====================================
@@ -1232,27 +1233,47 @@ function isSelectedDateToday() {
  * Change selected date
  */
 function changeDate(direction) {
+    // Prevent rapid successive calls
+    if (AppState.isChangingDate) {
+        console.log('⏸️ Date change already in progress, skipping');
+        return;
+    }
+
+    AppState.isChangingDate = true;
+    console.log('🔄 changeDate called, direction:', direction, 'current:', AppState.selectedDate);
+
     const currentDate = getSelectedDate();
     currentDate.setDate(currentDate.getDate() + direction);
 
     const newDateString = currentDate.toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
 
+    console.log('📅 New date would be:', newDateString);
+
     // Don't allow future dates
     if (newDateString > today) {
+        console.log('❌ Blocked future date');
+        AppState.isChangingDate = false;
         return;
     }
 
     // Set to new date (or null if it's today)
     if (newDateString === today) {
         AppState.selectedDate = null;
+        console.log('✅ Reset to today');
     } else {
         AppState.selectedDate = newDateString;
+        console.log('✅ Set to:', newDateString);
     }
 
     updateSelectedDateDisplay();
     setupMealsListener();
     updateNavigationButtons();
+
+    // Reset flag after a short delay
+    setTimeout(() => {
+        AppState.isChangingDate = false;
+    }, 100);
 }
 
 /**
