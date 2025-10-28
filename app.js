@@ -1231,21 +1231,36 @@ function isSelectedDateToday() {
  */
 function changeDate(direction) {
     const currentDate = getSelectedDate();
+    console.log('🔄 START changeDate:', {
+        direction,
+        currentSelected: AppState.selectedDate,
+        currentDateObj: currentDate.toISOString().split('T')[0]
+    });
+
     currentDate.setDate(currentDate.getDate() + direction);
 
     const newDateString = currentDate.toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
 
+    console.log('🔄 After setDate:', {
+        newDate: newDateString,
+        today,
+        willBlock: newDateString > today
+    });
+
     // Don't allow future dates
     if (newDateString > today) {
+        console.log('❌ BLOCKED: Future date');
         return;
     }
 
     // Set to new date (or null if it's today)
     if (newDateString === today) {
         AppState.selectedDate = null;
+        console.log('✅ Set to TODAY (null)');
     } else {
         AppState.selectedDate = newDateString;
+        console.log('✅ Set to:', newDateString);
     }
 
     updateSelectedDateDisplay();
