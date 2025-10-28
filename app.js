@@ -1125,13 +1125,15 @@ async function updateWeeklyTrend() {
             AppState.dailyGoals.calories
         );
 
+        // Calculate goal line position (100% = goal)
+        const goalLinePosition = (AppState.dailyGoals.calories / maxCalories) * 100;
+
         // Build HTML for chart
-        let chartHTML = '';
+        let chartHTML = '<div class="weekly-trend-bars">';
+
         weeklyData.forEach(dayData => {
-            const date = new Date(dayData.date + 'T00:00:00'); // Parse date correctly
+            const date = new Date(dayData.date + 'T00:00:00');
             const dayName = date.toLocaleDateString('cs-CZ', { weekday: 'short' }).toUpperCase();
-            const dayNumber = date.getDate();
-            const monthNumber = date.getMonth() + 1;
 
             const caloriesGoal = AppState.dailyGoals.calories;
             const percent = caloriesGoal > 0 ? Math.round((dayData.totalCalories / caloriesGoal) * 100) : 0;
@@ -1140,33 +1142,32 @@ async function updateWeeklyTrend() {
             const barHeight = maxCalories > 0 ? (dayData.totalCalories / maxCalories) * 100 : 0;
 
             // Determine bar style class
-            let barClass = 'trend-day-bar';
+            let barClass = 'trend-bar';
             if (percent >= 95 && percent <= 105) {
-                barClass += ' goal-reached'; // Green - goal reached
+                barClass += ' goal-reached';
             } else if (percent > 105) {
-                barClass += ' over-goal'; // Orange - over goal
+                barClass += ' over-goal';
             } else if (dayData.totalCalories > 0) {
-                barClass += ''; // Blue - normal
+                barClass += ' in-progress';
             } else {
-                barClass += ' under-goal'; // Gray - no data
+                barClass += ' no-data';
             }
 
-            // Check if this is today
             const isToday = dayData.date === todayDateString;
-            const dayClass = isToday ? 'trend-day today' : 'trend-day';
 
             chartHTML += `
-                <div class="${dayClass}">
-                    <div class="trend-day-label">${dayName}</div>
-                    <div class="trend-day-date">${dayNumber}.${monthNumber}.</div>
-                    <div class="trend-day-bar-container">
+                <div class="trend-column${isToday ? ' today' : ''}">
+                    <div class="trend-bar-container">
                         <div class="${barClass}" style="height: ${barHeight}%"></div>
                     </div>
-                    <div class="trend-day-value">${dayData.totalCalories} kcal</div>
-                    <div class="trend-day-percent">${percent}%</div>
+                    <div class="trend-percent">${percent}%</div>
+                    <div class="trend-day-name">${dayName}</div>
                 </div>
             `;
         });
+
+        chartHTML += '</div>';
+        chartHTML += `<div class="trend-goal-line" style="bottom: ${goalLinePosition}%"></div>`;
 
         chartContainer.innerHTML = chartHTML;
     } catch (error) {
