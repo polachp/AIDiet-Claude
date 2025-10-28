@@ -15,7 +15,8 @@ const AppState = {
     unsubscribeMealsListener: null,
     mediaRecorder: null,
     audioChunks: [],
-    audioBlob: null
+    audioBlob: null,
+    selectedDate: null // Current selected date (null = today)
 };
 
 // =====================================
@@ -160,6 +161,17 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Date navigation buttons
+    const prevDayBtn = document.getElementById('prevDayBtn');
+    if (prevDayBtn) {
+        prevDayBtn.addEventListener('click', goToPreviousDay);
+    }
+
+    const nextDayBtn = document.getElementById('nextDayBtn');
+    if (nextDayBtn) {
+        nextDayBtn.addEventListener('click', goToNextDay);
+    }
 }
 
 // =====================================
@@ -300,10 +312,12 @@ function setupMealsListener() {
         AppState.unsubscribeMealsListener();
     }
 
-    AppState.unsubscribeMealsListener = listenToTodayMeals(
+    const dateString = getSelectedDateString();
+    AppState.unsubscribeMealsListener = listenToMealsForDate(
         AppState.currentUser.uid,
+        dateString,
         (updatedMeals) => {
-            console.log('📥 Meals updated from Firestore:', updatedMeals.length);
+            console.log('📥 Meals updated from Firestore for', dateString, ':', updatedMeals.length);
             AppState.meals = updatedMeals;
             updateSummary();
             updateWeeklyTrend();
@@ -311,7 +325,7 @@ function setupMealsListener() {
         }
     );
 
-    console.log('✅ Meals real-time listener setup complete');
+    console.log('✅ Meals real-time listener setup complete for', dateString);
 }
 
 /**
@@ -331,8 +345,9 @@ async function addMeal(nutritionData) {
             return;
         }
 
-        await addMealToFirestore(AppState.currentUser.uid, nutritionData);
-        console.log('✅ Meal added successfully');
+        const dateString = getSelectedDateString();
+        await addMealToFirestore(AppState.currentUser.uid, nutritionData, dateString);
+        console.log('✅ Meal added successfully to', dateString);
     } catch (error) {
         console.error('Error adding meal:', error);
         alert('Chyba při ukládání jídla. Zkuste to prosím znovu.');
@@ -353,8 +368,9 @@ async function deleteMeal(id) {
     }
 
     try {
-        await deleteMealFromFirestore(AppState.currentUser.uid, id);
-        console.log('✅ Meal deleted successfully');
+        const dateString = getSelectedDateString();
+        await deleteMealFromFirestore(AppState.currentUser.uid, id, dateString);
+        console.log('✅ Meal deleted successfully from', dateString);
     } catch (error) {
         console.error('Error deleting meal:', error);
         alert('Chyba při mazání jídla. Zkuste to prosím znovu.');
@@ -1177,6 +1193,96 @@ async function updateWeeklyTrend() {
 }
 
 /**
+ * Get current selected date as Date object
+ */
+function getSelectedDate() {
+    if (AppState.selectedDate) {
+        return new Date(AppState.selectedDate + 'T00:00:00');
+    }
+    return new Date();
+}
+
+/**
+ * Get current selected date as string (YYYY-MM-DD)
+ */
+function getSelectedDateString() {
+    if (AppState.selectedDate) {
+        return AppState.selectedDate;
+    }
+    return new Date().toISOString().split('T')[0];
+}
+
+/**
+ * Check if selected date is today
+ */
+function isSelectedDateToday() {
+    const today = new Date().toISOString().split('T')[0];
+    return getSelectedDateString() === today;
+}
+
+/**
+ * Change selected date
+ */
+function changeDate(direction) {
+    const currentDate = getSelectedDate();
+    currentDate.setDate(currentDate.getDate() + direction);
+
+    const newDateString = currentDate.toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+
+    // Don't allow future dates
+    if (newDateString > today) {
+        return;
+    }
+
+    AppState.selectedDate = newDateString;
+    updateSelectedDateDisplay();
+    setupMealsListener();
+    updateNavigationButtons();
+}
+
+/**
+ * Go to previous day
+ */
+function goToPreviousDay() {
+    changeDate(-1);
+}
+
+/**
+ * Go to next day
+ */
+function goToNextDay() {
+    changeDate(1);
+}
+
+/**
+ * Update selected date display
+ */
+function updateSelectedDateDisplay() {
+    const selectedDateEl = document.getElementById('selectedDate');
+    if (!selectedDateEl) return;
+
+    if (isSelectedDateToday()) {
+        selectedDateEl.textContent = 'Dnes';
+    } else {
+        const date = getSelectedDate();
+        const options = { weekday: 'short', day: 'numeric', month: 'numeric' };
+        const dateStr = date.toLocaleDateString('cs-CZ', options);
+        selectedDateEl.textContent = dateStr;
+    }
+}
+
+/**
+ * Update navigation buttons state
+ */
+function updateNavigationButtons() {
+    const nextBtn = document.getElementById('nextDayBtn');
+    if (nextBtn) {
+        nextBtn.disabled = isSelectedDateToday();
+    }
+}
+
+/**
  * Update current date display
  */
 function updateCurrentDate() {
@@ -1186,6 +1292,8 @@ function updateCurrentDate() {
         const dateStr = new Date().toLocaleDateString('cs-CZ', options);
         currentDateEl.textContent = dateStr;
     }
+    updateSelectedDateDisplay();
+    updateNavigationButtons();
 }
 
 /**

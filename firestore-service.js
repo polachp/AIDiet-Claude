@@ -261,11 +261,14 @@ async function getWeeklyMealsData(userId) {
  * Add a new meal
  * @param {string} userId - User ID
  * @param {Object} mealData - {name, calories, protein, carbs, fat}
+ * @param {string} dateString - Optional date string (YYYY-MM-DD), defaults to today
  * @returns {Promise<string>} Document ID of created meal
  */
-async function addMealToFirestore(userId, mealData) {
+async function addMealToFirestore(userId, mealData, dateString = null) {
     try {
-        const dateString = getTodayDateString();
+        if (!dateString) {
+            dateString = getTodayDateString();
+        }
         const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
 
         const mealToSave = {
@@ -275,7 +278,7 @@ async function addMealToFirestore(userId, mealData) {
         };
 
         const docRef = await mealsRef.add(mealToSave);
-        console.log('✅ Meal added:', docRef.id);
+        console.log('✅ Meal added:', docRef.id, 'for date:', dateString);
 
         // Increment API call counter for rate limiting
         await incrementApiCallCounter(userId);
@@ -291,13 +294,16 @@ async function addMealToFirestore(userId, mealData) {
  * Delete a meal
  * @param {string} userId - User ID
  * @param {string} mealId - Meal document ID
+ * @param {string} dateString - Optional date string (YYYY-MM-DD), defaults to today
  * @returns {Promise<void>}
  */
-async function deleteMealFromFirestore(userId, mealId) {
+async function deleteMealFromFirestore(userId, mealId, dateString = null) {
     try {
-        const dateString = getTodayDateString();
+        if (!dateString) {
+            dateString = getTodayDateString();
+        }
         await db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items').doc(mealId).delete();
-        console.log('✅ Meal deleted:', mealId);
+        console.log('✅ Meal deleted:', mealId, 'from date:', dateString);
     } catch (error) {
         console.error('Error deleting meal:', error);
         throw error;
@@ -312,6 +318,33 @@ async function deleteMealFromFirestore(userId, mealId) {
  */
 function listenToTodayMeals(userId, callback) {
     const dateString = getTodayDateString();
+    const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
+
+    return mealsRef.orderBy('timestamp', 'desc').onSnapshot(
+        (snapshot) => {
+            const meals = [];
+            snapshot.forEach(doc => {
+                meals.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            callback(meals);
+        },
+        (error) => {
+            console.error('Error listening to meals:', error);
+        }
+    );
+}
+
+/**
+ * Listen to real-time updates for meals on a specific date
+ * @param {string} userId - User ID
+ * @param {string} dateString - Date string (YYYY-MM-DD)
+ * @param {Function} callback - Callback function to receive meals array
+ * @returns {Function} Unsubscribe function
+ */
+function listenToMealsForDate(userId, dateString, callback) {
     const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
 
     return mealsRef.orderBy('timestamp', 'desc').onSnapshot(

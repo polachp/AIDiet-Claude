@@ -654,6 +654,63 @@ button:disabled {
     font-weight: 300;
 }
 
+/* Date Navigator - iOS Style */
+.date-navigator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md) 0;
+}
+
+.date-nav-btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    color: var(--ios-blue);
+}
+
+.date-nav-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--ios-blue);
+    transform: scale(1.05);
+}
+
+.date-nav-btn:active {
+    transform: scale(0.95);
+}
+
+.date-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.date-nav-btn:disabled:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-color);
+    transform: scale(1);
+}
+
+.date-display {
+    flex: 1;
+    max-width: 300px;
+    text-align: center;
+}
+
+.date-display span {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 /* Macros Grid - iOS Cards */
 .macros-grid {
     display: grid;
@@ -1364,6 +1421,21 @@ button:disabled {
 
     .calories-secondary {
         font-size: 15px;
+    }
+
+    /* Date Navigator - Mobile */
+    .date-navigator {
+        gap: var(--space-md);
+        margin-bottom: var(--space-md);
+    }
+
+    .date-nav-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .date-display span {
+        font-size: 16px;
     }
 
     .macros-grid {
