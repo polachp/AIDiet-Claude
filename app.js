@@ -1147,6 +1147,7 @@ async function updateWeeklyTrend() {
         weeklyData.forEach(dayData => {
             const date = new Date(dayData.date + 'T00:00:00');
             const dayName = date.toLocaleDateString('cs-CZ', { weekday: 'short' }).toUpperCase();
+            const dayDate = date.getDate() + '.' + (date.getMonth() + 1) + '.';
 
             const caloriesGoal = AppState.dailyGoals.calories;
             const percent = caloriesGoal > 0 ? Math.round((dayData.totalCalories / caloriesGoal) * 100) : 0;
@@ -1167,14 +1168,23 @@ async function updateWeeklyTrend() {
             }
 
             const isToday = dayData.date === todayDateString;
+            const isSelected = dayData.date === AppState.selectedDate;
+
+            // If no date is selected (viewing today), mark today as selected
+            const isTodayActive = isToday && !AppState.selectedDate;
+
+            let columnClasses = 'trend-column';
+            if (isToday) columnClasses += ' today';
+            if (isSelected || isTodayActive) columnClasses += ' selected';
 
             chartHTML += `
-                <div class="trend-column${isToday ? ' today' : ''}">
+                <div class="${columnClasses}">
                     <div class="trend-bar-container">
                         <div class="${barClass}" style="height: ${barHeight}%"></div>
                     </div>
                     <div class="trend-percent">${percent}%</div>
                     <div class="trend-day-name">${dayName}</div>
+                    <div class="trend-day-date">${dayDate}</div>
                 </div>
             `;
         });
@@ -1240,6 +1250,18 @@ function changeDate(direction) {
 
     // Don't allow future dates
     if (newDateString > today) {
+        return;
+    }
+
+    // Don't allow more than 6 days in the past
+    const sixDaysAgo = new Date(todayDate);
+    sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
+    const sixDaysAgoYear = sixDaysAgo.getFullYear();
+    const sixDaysAgoMonth = String(sixDaysAgo.getMonth() + 1).padStart(2, '0');
+    const sixDaysAgoDay = String(sixDaysAgo.getDate()).padStart(2, '0');
+    const minDate = `${sixDaysAgoYear}-${sixDaysAgoMonth}-${sixDaysAgoDay}`;
+
+    if (newDateString < minDate) {
         return;
     }
 

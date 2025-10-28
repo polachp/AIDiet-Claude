@@ -675,7 +675,11 @@ button:disabled {
     justify-content: center;
     cursor: pointer;
     transition: all var(--transition-base);
-    color: var(--ios-blue);
+    color: var(--text-primary);
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+    padding: 0;
 }
 
 .date-nav-btn:hover {
@@ -894,28 +898,70 @@ button:disabled {
     margin-top: 4px;
 }
 
-/* Dnešní den - výrazné zvýraznění */
+.trend-day-date {
+    font-size: 9px;
+    color: var(--text-quaternary);
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+/* Vybraný den - iOS Style (zelené zvýraznění) */
+.trend-column.selected {
+    position: relative;
+}
+
+.trend-column.selected::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    z-index: -1;
+}
+
+.trend-column.selected .trend-bar {
+    background: linear-gradient(180deg, #34C759 0%, #28A745 100%) !important;
+    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.4);
+}
+
+.trend-column.selected .trend-day-name {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.trend-column.selected .trend-day-date {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.trend-column.selected .trend-percent {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 14px;
+}
+
+/* Dnešní den - bez extra zvýraznění (zelená jen pokud je vybraný) */
 .trend-column.today .trend-day-name {
     color: var(--text-primary);
     font-weight: 700;
     font-size: 12px;
 }
 
+.trend-column.today .trend-day-date {
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
 .trend-column.today .trend-percent {
-    color: var(--ios-blue);
+    color: var(--text-secondary);
     font-weight: 700;
 }
 
-.trend-column.today .trend-bar-container::after {
-    content: '';
-    position: absolute;
-    bottom: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    background: var(--ios-blue);
-    border-radius: 50%;
+/* Když je vybraný den současně dnešní den */
+.trend-column.selected.today::before {
+    box-shadow: var(--shadow-lg);
 }
 
 .trend-goal-line {
@@ -946,7 +992,7 @@ button:disabled {
 
 .meals-list-date {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--text-tertiary);
     margin-top: var(--space-xs);
     text-transform: capitalize;
