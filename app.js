@@ -37,14 +37,16 @@ async function initializeApp(user) {
         await loadUserDataFromFirestore();
 
         // Setup listeners
-        setupMealsListener();
         setupEventListeners();
         setupVoiceRecognition();
 
-        // Update UI
+        // Update UI first (so date displays are ready)
         updateCurrentDate();
         updateSummary();
         updateWeeklyTrend();
+
+        // Setup meals listener last (will trigger UI updates)
+        setupMealsListener();
 
         // Show settings for new users
         if (!AppState.userData) {
