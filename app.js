@@ -1277,16 +1277,21 @@ function updateSelectedDateDisplay() {
         }
     }
 
-    // Update meals list date
+    // Update meals list title and date
+    const mealsListTitleEl = document.getElementById('mealsListTitle');
     const mealsListDateEl = document.getElementById('mealsListDate');
-    if (mealsListDateEl) {
+
+    if (mealsListTitleEl && mealsListDateEl) {
+        const date = getSelectedDate();
+        const options = { weekday: 'long', day: 'numeric', month: 'numeric' };
+        const dateStr = date.toLocaleDateString('cs-CZ', options);
+
         if (isSelectedDateToday()) {
-            mealsListDateEl.textContent = '';
+            mealsListTitleEl.textContent = 'Seznam jídel dnes';
+            mealsListDateEl.textContent = dateStr;
         } else {
-            const date = getSelectedDate();
-            const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
-            const dateStr = date.toLocaleDateString('cs-CZ', options);
-            mealsListDateEl.textContent = `(${dateStr})`;
+            mealsListTitleEl.textContent = 'Seznam předchozích jídel';
+            mealsListDateEl.textContent = dateStr;
         }
     }
 }
