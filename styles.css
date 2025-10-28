@@ -937,6 +937,15 @@ button:disabled {
 
 .meals-section h2 {
     padding: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.meals-list-date {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-tertiary);
 }
 
 .meals-list {

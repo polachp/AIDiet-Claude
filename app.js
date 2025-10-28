@@ -1260,15 +1260,28 @@ function goToNextDay() {
  */
 function updateSelectedDateDisplay() {
     const selectedDateEl = document.getElementById('selectedDate');
-    if (!selectedDateEl) return;
+    if (selectedDateEl) {
+        if (isSelectedDateToday()) {
+            selectedDateEl.textContent = 'Dnes';
+        } else {
+            const date = getSelectedDate();
+            const options = { weekday: 'short', day: 'numeric', month: 'numeric' };
+            const dateStr = date.toLocaleDateString('cs-CZ', options);
+            selectedDateEl.textContent = dateStr;
+        }
+    }
 
-    if (isSelectedDateToday()) {
-        selectedDateEl.textContent = 'Dnes';
-    } else {
-        const date = getSelectedDate();
-        const options = { weekday: 'short', day: 'numeric', month: 'numeric' };
-        const dateStr = date.toLocaleDateString('cs-CZ', options);
-        selectedDateEl.textContent = dateStr;
+    // Update meals list date
+    const mealsListDateEl = document.getElementById('mealsListDate');
+    if (mealsListDateEl) {
+        if (isSelectedDateToday()) {
+            mealsListDateEl.textContent = '';
+        } else {
+            const date = getSelectedDate();
+            const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
+            const dateStr = date.toLocaleDateString('cs-CZ', options);
+            mealsListDateEl.textContent = `(${dateStr})`;
+        }
     }
 }
 
