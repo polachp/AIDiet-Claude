@@ -138,50 +138,39 @@
                 </div>
             </div>
 
-            <!-- Makroživiny s kruhovými grafy -->
-            <div>
-                <div class="macros-summary">
-                    <!-- Bílkoviny -->
-                    <div class="macro-item" data-protein>
-                        <span class="macro-icon">🥩</span>
-                        <span class="macro-label">Bílkoviny</span>
-                        <span class="macro-percent" id="proteinPercent">0%</span>
-                        <span class="macro-value">
-                            <span id="totalProtein">0</span>g
-                            <small id="proteinGoal">z 0g</small>
-                        </span>
-                        <div class="macro-progress-bar">
-                            <div class="macro-progress-fill" id="proteinProgress"></div>
-                        </div>
+            <!-- Makroživiny - minimalistické boxy -->
+            <div class="macros-grid">
+                <!-- Bílkoviny -->
+                <div class="macro-box" data-macro="protein">
+                    <div class="macro-box-icon">🥩</div>
+                    <div class="macro-box-label">Bílkoviny</div>
+                    <div class="macro-box-value">
+                        <span id="totalProtein">0</span>g
                     </div>
+                    <div class="macro-box-goal" id="proteinGoal">z 0g</div>
+                    <div class="macro-box-percent" id="proteinPercent">0%</div>
+                </div>
 
-                    <!-- Sacharidy -->
-                    <div class="macro-item" data-carbs>
-                        <span class="macro-icon">🌾</span>
-                        <span class="macro-label">Sacharidy</span>
-                        <span class="macro-percent" id="carbsPercent">0%</span>
-                        <span class="macro-value">
-                            <span id="totalCarbs">0</span>g
-                            <small id="carbsGoal">z 0g</small>
-                        </span>
-                        <div class="macro-progress-bar">
-                            <div class="macro-progress-fill" id="carbsProgress"></div>
-                        </div>
+                <!-- Sacharidy -->
+                <div class="macro-box" data-macro="carbs">
+                    <div class="macro-box-icon">🌾</div>
+                    <div class="macro-box-label">Sacharidy</div>
+                    <div class="macro-box-value">
+                        <span id="totalCarbs">0</span>g
                     </div>
+                    <div class="macro-box-goal" id="carbsGoal">z 0g</div>
+                    <div class="macro-box-percent" id="carbsPercent">0%</div>
+                </div>
 
-                    <!-- Tuky -->
-                    <div class="macro-item" data-fat>
-                        <span class="macro-icon">🥑</span>
-                        <span class="macro-label">Tuky</span>
-                        <span class="macro-percent" id="fatPercent">0%</span>
-                        <span class="macro-value">
-                            <span id="totalFat">0</span>g
-                            <small id="fatGoal">z 0g</small>
-                        </span>
-                        <div class="macro-progress-bar">
-                            <div class="macro-progress-fill" id="fatProgress"></div>
-                        </div>
+                <!-- Tuky -->
+                <div class="macro-box" data-macro="fat">
+                    <div class="macro-box-icon">🥑</div>
+                    <div class="macro-box-label">Tuky</div>
+                    <div class="macro-box-value">
+                        <span id="totalFat">0</span>g
                     </div>
+                    <div class="macro-box-goal" id="fatGoal">z 0g</div>
+                    <div class="macro-box-percent" id="fatPercent">0%</div>
                 </div>
             </div>
         </section>

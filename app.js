@@ -188,7 +188,7 @@ function calculateTDEE() {
 
 // Výpočet doporučených makroživin
 function calculateDailyGoals() {
-    const calories = calculateTDEE();
+    const calories = Math.round(calculateTDEE());
 
     // Doporučené rozdělení makroživin:
     // Protein: 25-30% (použijeme 30%)
@@ -201,7 +201,7 @@ function calculateDailyGoals() {
 
     // Převod na gramy (protein: 4 kcal/g, carbs: 4 kcal/g, fat: 9 kcal/g)
     dailyGoals = {
-        calories: calories,
+        calories: Math.round(calories),
         protein: Math.round(proteinCalories / 4),
         carbs: Math.round(carbsCalories / 4),
         fat: Math.round(fatCalories / 9)
@@ -417,23 +417,30 @@ async function callGeminiAPIWithAudio(prompt, audioBase64) {
 function parseNutritionData(aiResponse) {
     try {
         console.log('Parsing AI response:', aiResponse);
-        
+
         // Pokusí se najít JSON v odpovědi
         const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             console.log('Found JSON in response:', jsonMatch[0]);
             const parsed = JSON.parse(jsonMatch[0]);
-            
+
             // Validace dat
-            if (!parsed.name || typeof parsed.calories !== 'number' || 
-                typeof parsed.protein !== 'number' || 
-                typeof parsed.carbs !== 'number' || 
+            if (!parsed.name || typeof parsed.calories !== 'number' ||
+                typeof parsed.protein !== 'number' ||
+                typeof parsed.carbs !== 'number' ||
                 typeof parsed.fat !== 'number') {
                 console.error('Invalid data structure:', parsed);
                 return null;
             }
-            
-            return parsed;
+
+            // Zaokrouhlit všechna čísla na celá čísla
+            return {
+                name: parsed.name,
+                calories: Math.round(parsed.calories),
+                protein: Math.round(parsed.protein),
+                carbs: Math.round(parsed.carbs),
+                fat: Math.round(parsed.fat)
+            };
         }
 
         console.log('No JSON found, trying text parsing');
@@ -441,12 +448,12 @@ function parseNutritionData(aiResponse) {
         const lines = aiResponse.toLowerCase();
         const result = {
             name: "Analyzované jídlo",
-            calories: parseInt(lines.match(/(\d+)\s*(kcal|kalori)/)?.[1] || '0'),
-            protein: parseInt(lines.match(/bílkovin[ya]?:?\s*(\d+)/)?.[1] || '0'),
-            carbs: parseInt(lines.match(/sacharid[yů]?:?\s*(\d+)/)?.[1] || '0'),
-            fat: parseInt(lines.match(/tuk[yů]?:?\s*(\d+)/)?.[1] || '0')
+            calories: Math.round(parseInt(lines.match(/(\d+)\s*(kcal|kalori)/)?.[1] || '0')),
+            protein: Math.round(parseInt(lines.match(/bílkovin[ya]?:?\s*(\d+)/)?.[1] || '0')),
+            carbs: Math.round(parseInt(lines.match(/sacharid[yů]?:?\s*(\d+)/)?.[1] || '0')),
+            fat: Math.round(parseInt(lines.match(/tuk[yů]?:?\s*(\d+)/)?.[1] || '0'))
         };
-        
+
         console.log('Parsed from text:', result);
         return result;
     } catch (error) {
@@ -803,18 +810,22 @@ function displayMeals() {
         const caloriePercent = dailyGoals ?
             Math.round((meal.calories / dailyGoals.calories) * 100) : 0;
 
+        // Velké první písmeno názvu
+        const mealName = meal.name.charAt(0).toUpperCase() + meal.name.slice(1);
+
         return `
         <div class="meal-item-compact">
-            <div class="meal-main-info">
-                <span class="meal-name-compact">${meal.name}</span>
-                <span class="meal-percent-badge">${caloriePercent}%</span>
+            <div class="meal-left">
+                <div class="meal-name-compact">${mealName}</div>
+                <div class="meal-meta">
+                    <span class="meal-percent-badge">${caloriePercent}%</span>
+                    <span class="meal-calories">${meal.calories} kcal</span>
+                </div>
             </div>
-            <div class="meal-details-row">
-                <span class="meal-time-compact">🕐 ${formatTime(meal.timestamp)}</span>
-                <span class="meal-macros-compact">
-                    💪 ${meal.protein}g · 🌾 ${meal.carbs}g · 🥑 ${meal.fat}g
-                </span>
-                <span class="meal-calories-secondary">${meal.calories} kcal</span>
+            <div class="meal-right">
+                <span class="meal-macro-item">🥩 ${meal.protein}g</span>
+                <span class="meal-macro-item">🌾 ${meal.carbs}g</span>
+                <span class="meal-macro-item">🥑 ${meal.fat}g</span>
             </div>
             <button class="btn-delete-compact" onclick="deleteMeal(${meal.id})" title="Smazat">🗑️</button>
         </div>
@@ -829,6 +840,12 @@ function updateSummary() {
         carbs: acc.carbs + (meal.carbs || 0),
         fat: acc.fat + (meal.fat || 0)
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+    // Zaokrouhlit všechny totals na celá čísla
+    totals.calories = Math.round(totals.calories);
+    totals.protein = Math.round(totals.protein);
+    totals.carbs = Math.round(totals.carbs);
+    totals.fat = Math.round(totals.fat);
 
     // Aktualizovat celkové kalorie
     document.getElementById('totalCalories').textContent = totals.calories;
@@ -855,19 +872,19 @@ function updateSummary() {
             progressFill.style.background = 'rgba(255, 255, 255, 0.9)';
         }
 
-        // Aktualizovat makroživiny s progress bary
-        updateProgress('protein', totals.protein, dailyGoals.protein);
-        updateProgress('carbs', totals.carbs, dailyGoals.carbs);
-        updateProgress('fat', totals.fat, dailyGoals.fat);
+        // Aktualizovat makroživiny
+        updateMacroBox('protein', totals.protein, dailyGoals.protein);
+        updateMacroBox('carbs', totals.carbs, dailyGoals.carbs);
+        updateMacroBox('fat', totals.fat, dailyGoals.fat);
     } else {
         // Bez cílů, zobrazit základní info
         document.getElementById('caloriesPercentage').textContent = '-';
         document.getElementById('caloriesGoalValue').textContent = '?';
         document.getElementById('caloriesProgressFill').style.width = '0%';
 
-        document.getElementById('totalProtein').textContent = totals.protein + 'g';
-        document.getElementById('totalCarbs').textContent = totals.carbs + 'g';
-        document.getElementById('totalFat').textContent = totals.fat + 'g';
+        document.getElementById('totalProtein').textContent = totals.protein;
+        document.getElementById('totalCarbs').textContent = totals.carbs;
+        document.getElementById('totalFat').textContent = totals.fat;
 
         document.getElementById('proteinPercent').textContent = '-';
         document.getElementById('carbsPercent').textContent = '-';
@@ -879,21 +896,15 @@ function updateSummary() {
     }
 }
 
-function updateProgress(type, current, goal) {
+function updateMacroBox(type, current, goal) {
     const percent = Math.min(Math.round((current / goal) * 100), 100);
 
-    // Aktualizovat progress bar
-    const progressBar = document.getElementById(`${type}Progress`);
-    if (progressBar) {
-        progressBar.style.width = `${percent}%`;
-    }
-
-    // Aktualizovat texty
+    // Aktualizovat texty v macro boxu
     const totalElement = document.getElementById(`total${type.charAt(0).toUpperCase() + type.slice(1)}`);
     const percentElement = document.getElementById(`${type}Percent`);
     const goalElement = document.getElementById(`${type}Goal`);
 
-    if (totalElement) totalElement.textContent = current + 'g';
+    if (totalElement) totalElement.textContent = current;
     if (percentElement) percentElement.textContent = percent + '%';
     if (goalElement) goalElement.textContent = `z ${goal}g`;
 }

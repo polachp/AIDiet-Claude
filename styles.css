@@ -533,139 +533,96 @@ button:disabled {
     z-index: 1;
 }
 
-/* Makroživiny - minimalistický styl */
-:root {
-    /* Jemné podbarvení pro řádky */
-    --protein-bg: rgba(82, 121, 111, 0.06);  /* Zelenkavá */
-    --carbs-bg: rgba(214, 122, 43, 0.06);    /* Oranžová */
-    --fat-bg: rgba(149, 165, 166, 0.06);     /* Šedá */
+/* Makroživiny - minimalistické boxy */
+.macros-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+    margin-top: var(--space-sm);
 }
 
-.macros-summary {
+.macro-box {
     background: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    margin-top: var(--space-sm);
-    overflow: hidden;
-}
-
-.macro-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-md) var(--space-md);
-    transition: background-color 0.3s ease;
-    flex-wrap: wrap;
+    padding: var(--space-lg);
+    text-align: center;
+    transition: all var(--transition-base);
     position: relative;
 }
 
-.macro-item:not(:last-child) {
-    border-bottom: 1px solid var(--border-color);
+.macro-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 
-.macro-progress-bar {
-    width: 100%;
-    height: 4px;
-    background: rgba(0, 0, 0, 0.08);
-    border-radius: 2px;
-    overflow: hidden;
-    flex-basis: 100%;
-    margin-top: var(--space-xs);
+.macro-box-icon {
+    font-size: 2em;
+    margin-bottom: var(--space-sm);
+    opacity: 0.8;
 }
 
-.macro-progress-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.4s ease;
-    background: var(--primary-color);
-}
-
-.macro-item[data-protein] .macro-progress-fill {
-    background: var(--color-protein);
-}
-
-.macro-item[data-carbs] .macro-progress-fill {
-    background: var(--color-carbs);
-}
-
-.macro-item[data-fat] .macro-progress-fill {
-    background: var(--color-fat);
-}
-
-/* Podbarvení řádků podle procent */
-.macro-item[data-protein] { background: var(--protein-bg); }
-.macro-item[data-carbs] { background: var(--carbs-bg); }
-.macro-item[data-fat] { background: var(--fat-bg); }
-
-.macro-icon {
-    flex: 0 0 24px;
-    font-size: 1.2em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-}
-
-.macro-label {
-    flex: 0 0 80px;
+.macro-box-label {
+    font-size: 0.85em;
     color: var(--text-secondary);
-    font-size: 0.95em;
-}
-
-.macro-percent {
+    text-transform: uppercase;
     font-weight: 600;
-    min-width: 48px;
-    text-align: right;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-xs);
 }
 
-.macro-value {
-    margin-left: auto;
+.macro-box-value {
+    font-size: 2em;
+    font-weight: 700;
     color: var(--text-primary);
-    font-weight: 500;
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-xs);
+    margin-bottom: var(--space-xs);
 }
 
-.macro-value small {
+.macro-box-goal {
+    font-size: 0.85em;
     color: var(--text-tertiary);
-    font-size: 0.9em;
-    font-weight: normal;
-    margin: 0;
+    margin-bottom: var(--space-sm);
 }
 
-.macro-percent {
-    position: relative;
-    z-index: 1;
+.macro-box-percent {
+    font-size: 0.9em;
     font-weight: 600;
-    font-size: 0.95em;
-    margin-left: 8px;
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    display: inline-block;
 }
 
-.macro-value {
-    flex: 0 0 80px;
-    text-align: right;
-    color: var(--text-primary);
-    font-weight: 500;
-    margin-left: auto;
-    white-space: nowrap;
+/* Barevné odlišení procent podle typu makroživiny */
+.macro-box[data-macro="protein"] .macro-box-percent {
+    background: rgba(82, 121, 111, 0.15);
+    color: var(--color-protein);
 }
 
-.macro-value small {
-    margin-left: 4px;
-    color: var(--text-tertiary);
-    font-size: 0.9em;
-    font-weight: normal;
+.macro-box[data-macro="carbs"] .macro-box-percent {
+    background: rgba(108, 122, 137, 0.15);
+    color: var(--color-carbs);
 }
 
-/* Barevné označení procent */
-#proteinPercent { color: var(--color-protein); }
-#carbsPercent { color: var(--color-carbs); }
-#fatPercent { color: var(--color-fat); }
-/* Barevné označení procent makroživin */
-[id="proteinPercent"] { color: var(--color-protein); }
-[id="carbsPercent"] { color: var(--color-carbs); }
-[id="fatPercent"] { color: var(--color-fat); }
+.macro-box[data-macro="fat"] .macro-box-percent {
+    background: rgba(149, 165, 166, 0.15);
+    color: var(--color-fat);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .macros-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+
+    .macro-box {
+        padding: var(--space-md);
+    }
+
+    .macro-box-value {
+        font-size: 1.8em;
+    }
+}
 
 /* Meals List - Professional Card Style */
 .meals-list {
@@ -836,24 +793,6 @@ button:disabled {
         gap: var(--space-sm);
     }
 
-    .macros-grid {
-        grid-template-columns: 1fr;
-        gap: var(--space-sm);
-    }
-
-    .macro-circle-card {
-        padding: var(--space-md);
-    }
-
-    .circle-progress svg {
-        width: 100px;
-        height: 100px;
-    }
-
-    .circle-value {
-        font-size: 1.4em;
-    }
-
     .tabs {
         gap: 4px;
         padding: 4px;
@@ -938,21 +877,19 @@ button:disabled {
     transition: width 0.6s ease;
 }
 
-/* Professional Meal Item Card - SINGLE LINE LAYOUT */
+/* Professional Meal Item Card - New Clean Layout */
 .meal-item-compact {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    padding: var(--space-sm) var(--space-md);
-    display: flex;
-    flex-direction: row;
+    padding: var(--space-md);
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
-    justify-content: space-between;
     gap: var(--space-md);
     transition: all var(--transition-base);
     background: var(--card-background);
     box-shadow: var(--shadow-card);
     position: relative;
-    min-height: 44px;
 }
 
 .meal-item-compact:hover {
@@ -960,61 +897,52 @@ button:disabled {
     transform: translateY(-1px);
 }
 
-.meal-main-info {
+.meal-left {
     display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    flex-shrink: 0;
+    flex-direction: column;
+    gap: var(--space-xs);
 }
 
 .meal-name-compact {
     font-weight: 600;
-    font-size: 0.95em;
+    font-size: 1em;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
+}
+
+.meal-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
 }
 
 .meal-percent-badge {
     display: inline-block;
-    background: var(--color-calories);
-    color: var(--text-white);
-    padding: 3px 8px;
+    background: var(--card-hover);
+    color: var(--text-secondary);
+    padding: 3px 10px;
     border-radius: var(--radius-sm);
-    font-size: 0.75em;
-    font-weight: 700;
-    min-width: 40px;
-    text-align: center;
-    white-space: nowrap;
+    font-size: 0.8em;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
 }
 
-.meal-details-row {
+.meal-calories {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.meal-right {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    font-size: 0.8em;
-    color: var(--text-secondary);
-    flex-grow: 1;
-    white-space: nowrap;
+    justify-self: end;
 }
 
-.meal-time-compact {
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.meal-macros-compact {
-    font-weight: 500;
+.meal-macro-item {
+    font-size: 0.9em;
     color: var(--text-primary);
-    white-space: nowrap;
-}
-
-.meal-calories-secondary {
     font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 0.95em;
     white-space: nowrap;
 }
 
@@ -1055,30 +983,20 @@ button:disabled {
     }
 
     .meal-item-compact {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+        padding: var(--space-md);
+    }
+
+    .meal-right {
+        justify-self: start;
         flex-wrap: wrap;
         gap: var(--space-sm);
-        padding: var(--space-sm);
-    }
-
-    .meal-main-info {
-        flex: 1 1 auto;
-    }
-
-    .meal-name-compact {
-        max-width: 150px;
-    }
-
-    .meal-details-row {
-        flex-basis: 100%;
-        gap: var(--space-sm);
-        flex-wrap: wrap;
     }
 
     .btn-delete-compact {
-        flex-basis: 100%;
         width: 100%;
-        padding: 8px;
-        font-size: 0.9em;
+        padding: 10px;
     }
 }
 
