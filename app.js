@@ -1034,9 +1034,12 @@ function updateMacroBox(type, current, goal) {
 
 // === UTILITY FUNCTIONS ===
 function updateCurrentDate() {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const dateStr = new Date().toLocaleDateString('cs-CZ', options);
-    document.getElementById('currentDate').textContent = dateStr;
+    const currentDateEl = document.getElementById('currentDate');
+    if (currentDateEl) {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateStr = new Date().toLocaleDateString('cs-CZ', options);
+        currentDateEl.textContent = dateStr;
+    }
 }
 
 function formatTime(timestamp) {
