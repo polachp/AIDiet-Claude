@@ -710,8 +710,8 @@ button:disabled {
 }
 
 .date-display span {
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--text-primary);
 }
 
@@ -1494,7 +1494,7 @@ button:disabled {
     }
 
     .date-display span {
-        font-size: 16px;
+        font-size: 20px;
     }
 
     .macros-grid {

@@ -1301,9 +1301,23 @@ function updateSelectedDateDisplay() {
             selectedDateEl.textContent = 'Dnes';
         } else {
             const date = getSelectedDate();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selectedDate = new Date(date);
+            selectedDate.setHours(0, 0, 0, 0);
+
+            const daysDiff = Math.floor((today - selectedDate) / (1000 * 60 * 60 * 24));
+
             const options = { weekday: 'short', day: 'numeric', month: 'numeric' };
             const dateStr = date.toLocaleDateString('cs-CZ', options);
-            selectedDateEl.textContent = dateStr;
+
+            if (daysDiff === 1) {
+                selectedDateEl.textContent = `Včera (${dateStr})`;
+            } else if (daysDiff === 2) {
+                selectedDateEl.textContent = `Předevčírem (${dateStr})`;
+            } else {
+                selectedDateEl.textContent = dateStr;
+            }
         }
     }
 
@@ -1313,15 +1327,28 @@ function updateSelectedDateDisplay() {
 
     if (mealsListTitleEl && mealsListDateEl) {
         const date = getSelectedDate();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(date);
+        selectedDate.setHours(0, 0, 0, 0);
+
+        const daysDiff = Math.floor((today - selectedDate) / (1000 * 60 * 60 * 24));
+
         const options = { weekday: 'long', day: 'numeric', month: 'numeric' };
         const dateStr = date.toLocaleDateString('cs-CZ', options);
 
         if (isSelectedDateToday()) {
-            mealsListTitleEl.textContent = 'Seznam jídel dnes';
-            mealsListDateEl.textContent = dateStr;
+            mealsListTitleEl.textContent = `Seznam jídel dnes (${dateStr})`;
+            mealsListDateEl.textContent = '';
+        } else if (daysDiff === 1) {
+            mealsListTitleEl.textContent = `Seznam jídel včera (${dateStr})`;
+            mealsListDateEl.textContent = '';
+        } else if (daysDiff === 2) {
+            mealsListTitleEl.textContent = `Seznam jídel předevčírem (${dateStr})`;
+            mealsListDateEl.textContent = '';
         } else {
-            mealsListTitleEl.textContent = 'Seznam předchozích jídel';
-            mealsListDateEl.textContent = dateStr;
+            mealsListTitleEl.textContent = `Seznam jídel ${dateStr}`;
+            mealsListDateEl.textContent = '';
         }
     }
 }
