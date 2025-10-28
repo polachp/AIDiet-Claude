@@ -1264,6 +1264,7 @@ function goToPreviousDay() {
  * Go to next day
  */
 function goToNextDay() {
+    console.log('➡️ Next day clicked');
     changeDate(1);
 }
 
@@ -1308,7 +1309,9 @@ function updateSelectedDateDisplay() {
 function updateNavigationButtons() {
     const nextBtn = document.getElementById('nextDayBtn');
     if (nextBtn) {
-        nextBtn.disabled = isSelectedDateToday();
+        const isToday = isSelectedDateToday();
+        nextBtn.disabled = isToday;
+        console.log('🔘 Next button:', isToday ? 'DISABLED' : 'ENABLED', 'selectedDate:', AppState.selectedDate, 'today:', new Date().toISOString().split('T')[0]);
     }
 }
 
