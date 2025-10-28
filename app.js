@@ -212,23 +212,33 @@ function calculateDailyGoals() {
 
 // === LOCAL STORAGE ===
 function loadMeals() {
-    const today = new Date().toDateString();
-    const savedMeals = localStorage.getItem(`meals_${today}`);
+    const today = new Date();
+    const dateKey = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    const savedMeals = localStorage.getItem(`meals_${dateKey}`);
 
     if (savedMeals) {
-        meals = JSON.parse(savedMeals);
+        try {
+            meals = JSON.parse(savedMeals);
+            console.log('Načteno jídel:', meals.length);
+        } catch (e) {
+            console.error('Chyba při načítání jídel:', e);
+            meals = [];
+        }
     } else {
+        console.log('Žádná uložená jídla pro dnešek');
         meals = [];
     }
 }
 
 function saveMeals() {
-    const today = new Date().toDateString();
-    localStorage.setItem(`meals_${today}`, JSON.stringify(meals));
+    const today = new Date();
+    const dateKey = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    localStorage.setItem(`meals_${dateKey}`, JSON.stringify(meals));
+    console.log('Uloženo jídel:', meals.length);
 }
 
 // === TAB SWITCHING ===
-function switchTab(tabName) {
+function switchTab(tabName, event) {
     // Deaktivovat všechny taby
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
@@ -237,7 +247,15 @@ function switchTab(tabName) {
     contents.forEach(content => content.classList.remove('active'));
 
     // Aktivovat vybraný tab
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // Pokud event není poskytnut, najít tab tlačítko podle názvu
+        const targetBtn = document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
+        if (targetBtn) {
+            targetBtn.classList.add('active');
+        }
+    }
     document.getElementById(`${tabName}Tab`).classList.add('active');
 }
 
@@ -398,23 +416,42 @@ async function callGeminiAPIWithAudio(prompt, audioBase64) {
 
 function parseNutritionData(aiResponse) {
     try {
+        console.log('Parsing AI response:', aiResponse);
+        
         // Pokusí se najít JSON v odpovědi
         const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            console.log('Found JSON in response:', jsonMatch[0]);
+            const parsed = JSON.parse(jsonMatch[0]);
+            
+            // Validace dat
+            if (!parsed.name || typeof parsed.calories !== 'number' || 
+                typeof parsed.protein !== 'number' || 
+                typeof parsed.carbs !== 'number' || 
+                typeof parsed.fat !== 'number') {
+                console.error('Invalid data structure:', parsed);
+                return null;
+            }
+            
+            return parsed;
         }
 
+        console.log('No JSON found, trying text parsing');
         // Fallback - pokusí se parsovat textovou odpověď
         const lines = aiResponse.toLowerCase();
-        return {
+        const result = {
             name: "Analyzované jídlo",
-            calories: parseInt(lines.match(/(\d+)\s*(kcal|kalori)/)?.[1] || 0),
-            protein: parseInt(lines.match(/bílkovin[ya]?:?\s*(\d+)/)?.[1] || 0),
-            carbs: parseInt(lines.match(/sacharid[yů]?:?\s*(\d+)/)?.[1] || 0),
-            fat: parseInt(lines.match(/tuk[yů]?:?\s*(\d+)/)?.[1] || 0)
+            calories: parseInt(lines.match(/(\d+)\s*(kcal|kalori)/)?.[1] || '0'),
+            protein: parseInt(lines.match(/bílkovin[ya]?:?\s*(\d+)/)?.[1] || '0'),
+            carbs: parseInt(lines.match(/sacharid[yů]?:?\s*(\d+)/)?.[1] || '0'),
+            fat: parseInt(lines.match(/tuk[yů]?:?\s*(\d+)/)?.[1] || '0')
         };
+        
+        console.log('Parsed from text:', result);
+        return result;
     } catch (error) {
         console.error('Parsing error:', error);
+        console.error('Original response:', aiResponse);
         return null;
     }
 }
@@ -494,18 +531,35 @@ Jídlo: ${text}
 
 Vrať POUZE validní JSON, bez dalšího textu. Pokud je popis vágní, udělej kvalifikovaný odhad.`;
 
-    const response = await callGeminiAPI(prompt);
-    showLoading(false);
-    isProcessing = false;
+    try {
+        const response = await callGeminiAPI(prompt);
+        showLoading(false);
+        isProcessing = false;
 
-    if (response) {
-        const nutritionData = parseNutritionData(response);
-        if (nutritionData) {
-            addMeal(nutritionData);
-            textInput.value = '';
-        } else {
-            alert('Nepodařilo se analyzovat jídlo. Zkuste to znovu.');
+        if (!response) {
+            console.error('No response from API');
+            alert('Nepodařilo se získat odpověď z API. Zkontrolujte API klíč a zkuste to znovu.');
+            return;
         }
+
+        console.log('API Response:', response);
+        const nutritionData = parseNutritionData(response);
+        
+        if (!nutritionData) {
+            console.error('Failed to parse nutrition data');
+            alert('Nepodařilo se analyzovat jídlo. Formát odpovědi není správný.');
+            return;
+        }
+
+        console.log('Adding meal:', nutritionData);
+        addMeal(nutritionData);
+        textInput.value = '';
+        
+    } catch (error) {
+        console.error('Error in analyzeText:', error);
+        alert('Došlo k chybě při analýze: ' + error.message);
+        showLoading(false);
+        isProcessing = false;
     }
 }
 
@@ -801,10 +855,10 @@ function updateSummary() {
             progressFill.style.background = 'rgba(255, 255, 255, 0.9)';
         }
 
-        // Aktualizovat makroživiny s kruhovými grafy
-        updateCircularProgress('protein', totals.protein, dailyGoals.protein);
-        updateCircularProgress('carbs', totals.carbs, dailyGoals.carbs);
-        updateCircularProgress('fat', totals.fat, dailyGoals.fat);
+        // Aktualizovat makroživiny s progress bary
+        updateProgress('protein', totals.protein, dailyGoals.protein);
+        updateProgress('carbs', totals.carbs, dailyGoals.carbs);
+        updateProgress('fat', totals.fat, dailyGoals.fat);
     } else {
         // Bez cílů, zobrazit základní info
         document.getElementById('caloriesPercentage').textContent = '-';
@@ -825,26 +879,23 @@ function updateSummary() {
     }
 }
 
-function updateCircularProgress(type, current, goal) {
+function updateProgress(type, current, goal) {
     const percent = Math.min(Math.round((current / goal) * 100), 100);
-    const circumference = 2 * Math.PI * 52; // r=52
-    const offset = circumference - (percent / 100) * circumference;
 
-    // Aktualizovat SVG kruh
-    const circle = document.getElementById(`${type}Circle`);
-    circle.style.strokeDashoffset = offset;
+    // Aktualizovat progress bar
+    const progressBar = document.getElementById(`${type}Progress`);
+    if (progressBar) {
+        progressBar.style.width = `${percent}%`;
+    }
 
     // Aktualizovat texty
-    document.getElementById(`total${type.charAt(0).toUpperCase() + type.slice(1)}`).textContent = current + 'g';
-    document.getElementById(`${type}Percent`).textContent = percent + '%';
-    document.getElementById(`${type}Goal`).textContent = `z ${goal}g`;
+    const totalElement = document.getElementById(`total${type.charAt(0).toUpperCase() + type.slice(1)}`);
+    const percentElement = document.getElementById(`${type}Percent`);
+    const goalElement = document.getElementById(`${type}Goal`);
 
-    // Změnit barvu při dosažení/překročení cíle
-    if (percent >= 100) {
-        circle.style.stroke = '#4CAF50'; // Zelená při dosažení
-    } else if (percent >= 80) {
-        circle.style.stroke = '#FFA726'; // Oranžová při blízkosti
-    }
+    if (totalElement) totalElement.textContent = current + 'g';
+    if (percentElement) percentElement.textContent = percent + '%';
+    if (goalElement) goalElement.textContent = `z ${goal}g`;
 }
 
 // === UTILITY FUNCTIONS ===

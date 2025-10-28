@@ -79,9 +79,9 @@
 
             <!-- Tab menu -->
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('text')">📝 Text</button>
-                <button class="tab-btn" onclick="switchTab('photo')">📷 Foto</button>
-                <button class="tab-btn" onclick="switchTab('voice')">🎤 Hlas</button>
+                <button class="tab-btn active" onclick="switchTab('text', event)">📝 Text</button>
+                <button class="tab-btn" onclick="switchTab('photo', event)">📷 Foto</button>
+                <button class="tab-btn" onclick="switchTab('voice', event)">🎤 Hlas</button>
             </div>
 
             <!-- Textový vstup -->
@@ -108,7 +108,6 @@
             <!-- Hlasový vstup -->
             <div id="voiceTab" class="tab-content">
                 <div class="form-group">
-                    <textarea id="voiceInput" placeholder="1. Klikněte 'Začít nahrávat' a nadiktujte co jste snědli&#10;2. Klikněte 'Zastavit' pro ukončení&#10;Nahrávka se automaticky zpracuje po zastavení" rows="3" readonly></textarea>
                     <button onclick="startVoiceRecognition()" id="voiceBtn" class="btn-primary">🎤 Začít nahrávat</button>
                     <div id="voiceLoading" class="inline-loading" style="display: none;">
                         <div class="spinner-small"></div>
@@ -141,54 +140,47 @@
 
             <!-- Makroživiny s kruhovými grafy -->
             <div>
-                <h3 style="margin-bottom: 15px; color: var(--text-secondary); font-size: 1.1em;">Denní příjem makroživin</h3>
-                <div class="macros-grid">
+                <div class="macros-summary">
                     <!-- Bílkoviny -->
-                    <div class="macro-circle-card">
-                        <div class="circle-progress">
-                            <svg width="120" height="120">
-                                <circle class="circle-bg" cx="60" cy="60" r="52"></circle>
-                                <circle class="circle-progress-protein" id="proteinCircle" cx="60" cy="60" r="52"></circle>
-                            </svg>
-                            <div class="circle-text">
-                                <div class="circle-value" id="totalProtein">0g</div>
-                                <div class="circle-percent" id="proteinPercent">0%</div>
-                            </div>
+                    <div class="macro-item" data-protein>
+                        <span class="macro-icon">🥩</span>
+                        <span class="macro-label">Bílkoviny</span>
+                        <span class="macro-percent" id="proteinPercent">0%</span>
+                        <span class="macro-value">
+                            <span id="totalProtein">0</span>g
+                            <small id="proteinGoal">z 0g</small>
+                        </span>
+                        <div class="macro-progress-bar">
+                            <div class="macro-progress-fill" id="proteinProgress"></div>
                         </div>
-                        <div class="circle-label">Bílkoviny</div>
-                        <div class="circle-goal" id="proteinGoal">z 0g</div>
                     </div>
 
                     <!-- Sacharidy -->
-                    <div class="macro-circle-card">
-                        <div class="circle-progress">
-                            <svg width="120" height="120">
-                                <circle class="circle-bg" cx="60" cy="60" r="52"></circle>
-                                <circle class="circle-progress-carbs" id="carbsCircle" cx="60" cy="60" r="52"></circle>
-                            </svg>
-                            <div class="circle-text">
-                                <div class="circle-value" id="totalCarbs">0g</div>
-                                <div class="circle-percent" id="carbsPercent">0%</div>
-                            </div>
+                    <div class="macro-item" data-carbs>
+                        <span class="macro-icon">🌾</span>
+                        <span class="macro-label">Sacharidy</span>
+                        <span class="macro-percent" id="carbsPercent">0%</span>
+                        <span class="macro-value">
+                            <span id="totalCarbs">0</span>g
+                            <small id="carbsGoal">z 0g</small>
+                        </span>
+                        <div class="macro-progress-bar">
+                            <div class="macro-progress-fill" id="carbsProgress"></div>
                         </div>
-                        <div class="circle-label">Sacharidy</div>
-                        <div class="circle-goal" id="carbsGoal">z 0g</div>
                     </div>
 
                     <!-- Tuky -->
-                    <div class="macro-circle-card">
-                        <div class="circle-progress">
-                            <svg width="120" height="120">
-                                <circle class="circle-bg" cx="60" cy="60" r="52"></circle>
-                                <circle class="circle-progress-fat" id="fatCircle" cx="60" cy="60" r="52"></circle>
-                            </svg>
-                            <div class="circle-text">
-                                <div class="circle-value" id="totalFat">0g</div>
-                                <div class="circle-percent" id="fatPercent">0%</div>
-                            </div>
+                    <div class="macro-item" data-fat>
+                        <span class="macro-icon">🥑</span>
+                        <span class="macro-label">Tuky</span>
+                        <span class="macro-percent" id="fatPercent">0%</span>
+                        <span class="macro-value">
+                            <span id="totalFat">0</span>g
+                            <small id="fatGoal">z 0g</small>
+                        </span>
+                        <div class="macro-progress-bar">
+                            <div class="macro-progress-fill" id="fatProgress"></div>
                         </div>
-                        <div class="circle-label">Tuky</div>
-                        <div class="circle-goal" id="fatGoal">z 0g</div>
                     </div>
                 </div>
             </div>
