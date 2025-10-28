@@ -124,28 +124,6 @@ header * {
     z-index: 1;
 }
 
-.settings-btn {
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-    padding: 6px 12px;
-    background: var(--primary-color);
-    color: var(--text-white);
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-}
-
-.settings-btn:hover {
-    background: var(--primary-dark);
-}
-
-.settings-btn:active {
-    transform: scale(0.98);
-}
 
 header h1 {
     font-size: 1.8em;
@@ -806,13 +784,6 @@ button:disabled {
 
     header p {
         font-size: 0.9em;
-    }
-
-    .settings-btn {
-        top: var(--space-sm);
-        right: var(--space-sm);
-        padding: 6px 12px;
-        font-size: 12px;
     }
 
     section {
@@ -1505,6 +1476,13 @@ button:disabled {
     .header-actions {
         position: static;
         justify-content: center;
-        margin-bottom: var(--space-md);
+        margin-top: var(--space-lg);
+        flex-wrap: wrap;
+    }
+
+    .settings-btn,
+    .logout-btn {
+        padding: 8px 14px;
+        font-size: 0.9em;
     }
 }

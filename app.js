@@ -380,7 +380,7 @@ function displayMeals() {
                 <span class="meal-macro-item">🌾 ${meal.carbs}g</span>
                 <span class="meal-macro-item">🥑 ${meal.fat}g</span>
             </div>
-            <button class="btn-delete-compact" onclick="deleteMeal(${meal.id})" title="Smazat">🗑️</button>
+            <button class="btn-delete-compact" onclick="deleteMeal('${meal.id}')" title="Smazat">🗑️</button>
         </div>
     `;
     }).join('');
