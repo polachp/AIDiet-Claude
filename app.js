@@ -909,21 +909,50 @@ function updateSummary() {
         const caloriesPercent = Math.round((totals.calories / dailyGoals.calories) * 100);
 
         // Aktualizovat hlavní kartu s procentem
-        document.getElementById('caloriesPercentage').textContent = caloriesPercent + '%';
+        const caloriesPercentageEl = document.getElementById('caloriesPercentage');
+        caloriesPercentageEl.textContent = caloriesPercent + '%';
         document.getElementById('caloriesGoalValue').textContent = dailyGoals.calories;
 
-        // Aktualizovat progress bar
+        // Aktualizovat progress bar - zobrazit skutečná procenta i nad 100%
         const progressFill = document.getElementById('caloriesProgressFill');
-        const clampedPercent = Math.min(caloriesPercent, 100);
-        progressFill.style.width = clampedPercent + '%';
+        progressFill.style.width = Math.min(caloriesPercent, 100) + '%'; // Progress bar max 100% šířky
 
-        // Změnit barvu podle úrovně
-        if (caloriesPercent >= 100) {
+        // Plynulé barevné varování podle úrovně (bez rámečků)
+        if (caloriesPercent >= 120) {
+            // 120%+ - tmavě červená (vážné překročení)
+            progressFill.style.background = 'rgba(211, 47, 47, 0.95)';
+            caloriesPercentageEl.style.color = '#D32F2F';
+            caloriesPercentageEl.style.fontWeight = '700';
+        } else if (caloriesPercent >= 110) {
+            // 110-119% - středně červená
+            progressFill.style.background = 'rgba(229, 57, 53, 0.9)';
+            caloriesPercentageEl.style.color = '#E53935';
+            caloriesPercentageEl.style.fontWeight = '700';
+        } else if (caloriesPercent >= 101) {
+            // 101-109% - světle červená (varování začíná)
+            progressFill.style.background = 'rgba(239, 83, 80, 0.85)';
+            caloriesPercentageEl.style.color = '#EF5350';
+            caloriesPercentageEl.style.fontWeight = '700';
+        } else if (caloriesPercent === 100) {
+            // PŘESNĚ 100% - zelená (ideální)
             progressFill.style.background = 'rgba(76, 175, 80, 0.9)';
-        } else if (caloriesPercent >= 80) {
+            caloriesPercentageEl.style.color = '#4CAF50';
+            caloriesPercentageEl.style.fontWeight = '600';
+        } else if (caloriesPercent >= 90) {
+            // 90-99% - oranžová
             progressFill.style.background = 'rgba(255, 167, 38, 0.9)';
+            caloriesPercentageEl.style.color = '#FF6F00';
+            caloriesPercentageEl.style.fontWeight = '600';
+        } else if (caloriesPercent >= 80) {
+            // 80-89% - světle oranžová
+            progressFill.style.background = 'rgba(255, 183, 77, 0.85)';
+            caloriesPercentageEl.style.color = '#FF8F00';
+            caloriesPercentageEl.style.fontWeight = '600';
         } else {
+            // 0-79% - normální (šedá/bílá)
             progressFill.style.background = 'rgba(255, 255, 255, 0.9)';
+            caloriesPercentageEl.style.color = 'var(--text-primary)';
+            caloriesPercentageEl.style.fontWeight = '600';
         }
 
         // Aktualizovat makroživiny
@@ -950,7 +979,8 @@ function updateSummary() {
 }
 
 function updateMacroBox(type, current, goal) {
-    const percent = Math.min(Math.round((current / goal) * 100), 100);
+    // Zobrazit skutečná procenta i nad 100%
+    const percent = Math.round((current / goal) * 100);
 
     // Aktualizovat texty v macro boxu
     const totalElement = document.getElementById(`total${type.charAt(0).toUpperCase() + type.slice(1)}`);
@@ -961,10 +991,44 @@ function updateMacroBox(type, current, goal) {
     if (percentElement) percentElement.textContent = percent + '%';
     if (goalElement) goalElement.textContent = `z ${goal}g`;
 
-    // Nastavit výšku rising fill pozadí
+    // Nastavit výšku rising fill pozadí - max 100% pro vizuální výplň
     const macroBox = document.querySelector(`.macro-box[data-macro="${type}"]`);
     if (macroBox) {
-        macroBox.style.setProperty('--fill-height', percent + '%');
+        const fillHeight = Math.min(percent, 100);
+        macroBox.style.setProperty('--fill-height', fillHeight + '%');
+
+        // Plynulé barevné varování podle úrovně (bez rámečků)
+        if (percentElement) {
+            if (percent >= 120) {
+                // 120%+ - tmavě červená (vážné překročení)
+                percentElement.style.color = '#D32F2F';
+                percentElement.style.fontWeight = '700';
+            } else if (percent >= 110) {
+                // 110-119% - středně červená
+                percentElement.style.color = '#E53935';
+                percentElement.style.fontWeight = '700';
+            } else if (percent >= 101) {
+                // 101-109% - světle červená (varování začíná)
+                percentElement.style.color = '#EF5350';
+                percentElement.style.fontWeight = '700';
+            } else if (percent === 100) {
+                // PŘESNĚ 100% - zelená (ideální)
+                percentElement.style.color = '#4CAF50';
+                percentElement.style.fontWeight = '600';
+            } else if (percent >= 90) {
+                // 90-99% - oranžová
+                percentElement.style.color = '#FF6F00';
+                percentElement.style.fontWeight = '600';
+            } else if (percent >= 80) {
+                // 80-89% - světle oranžová
+                percentElement.style.color = '#FF8F00';
+                percentElement.style.fontWeight = '600';
+            } else {
+                // 0-79% - normální (šedá/bílá)
+                percentElement.style.color = 'var(--text-primary)';
+                percentElement.style.fontWeight = '500';
+            }
+        }
     }
 }
 

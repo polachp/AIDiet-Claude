@@ -500,6 +500,7 @@ button:disabled {
     box-shadow: var(--shadow-sm);
     position: relative;
     overflow: hidden;
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .calories-main::before {
@@ -599,10 +600,10 @@ button:disabled {
 }
 
 .macro-box-label {
-    font-size: 0.75em;
-    color: var(--text-secondary);
+    font-size: 0.9em;
+    color: #5D6D7E;
     text-transform: uppercase;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.5px;
     margin-bottom: var(--space-sm);
     position: relative;
@@ -620,13 +621,14 @@ button:disabled {
     position: relative;
     z-index: 1;
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    transition: color var(--transition-base), font-weight var(--transition-base);
 }
 
 /* GRAMY - vedlejší info, menší a méně výrazné */
 .macro-box-value {
-    font-size: 1.1em;
-    font-weight: 600;
-    color: #5D6D7E;
+    font-size: 1.35em;
+    font-weight: 700;
+    color: #34495E;
     margin-bottom: 4px;
     position: relative;
     z-index: 1;
@@ -634,8 +636,9 @@ button:disabled {
 }
 
 .macro-box-goal {
-    font-size: 0.8em;
-    color: #7F8C8D;
+    font-size: 0.95em;
+    color: #5D6D7E;
+    font-weight: 600;
     margin-bottom: 0;
     position: relative;
     z-index: 1;
@@ -659,7 +662,15 @@ button:disabled {
     }
 
     .macro-box-value {
-        font-size: 1em;
+        font-size: 1.2em;
+    }
+
+    .macro-box-label {
+        font-size: 0.85em;
+    }
+
+    .macro-box-goal {
+        font-size: 0.9em;
     }
 }
 
@@ -880,6 +891,14 @@ button:disabled {
 
 /* Professional Percentage-Based Calories Display */
 
+.calories-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+    gap: var(--space-lg);
+}
+
 .calories-percentage {
     font-size: 4em;
     font-weight: 700;
@@ -888,15 +907,17 @@ button:disabled {
     position: relative;
     z-index: 1;
     line-height: 1;
+    transition: color var(--transition-base), font-weight var(--transition-base);
 }
 
 .calories-secondary {
-    font-size: 1em;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
+    font-size: 1.5em;
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 600;
     position: relative;
     z-index: 1;
-    margin-bottom: var(--space-md);
+    text-align: right;
+    white-space: nowrap;
 }
 
 .calories-progress-bar {
@@ -913,7 +934,7 @@ button:disabled {
     height: 100%;
     background: rgba(255, 255, 255, 0.9);
     border-radius: var(--radius-sm);
-    transition: width 0.6s ease;
+    transition: width 0.6s ease, background 0.3s ease;
 }
 
 /* Professional Meal Item Card - New Clean Layout */
@@ -1008,13 +1029,20 @@ button:disabled {
 
 /* Compact Meal Item - Mobile Responsive */
 @media (max-width: 768px) {
+    .calories-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-sm);
+    }
+
     .calories-percentage {
         font-size: 3.5em;
     }
 
     .calories-secondary {
-        font-size: 1em;
-        margin-bottom: var(--space-sm);
+        font-size: 1.2em;
+        text-align: left;
     }
 
     .calories-progress-bar {
