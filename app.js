@@ -98,6 +98,19 @@ function clearAppData() {
  * Setup all event listeners
  */
 function setupEventListeners() {
+    // Close dropdown menu when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const menuBtn = document.getElementById('menuBtn');
+
+        if (dropdownMenu && menuBtn &&
+            !dropdownMenu.contains(e.target) &&
+            !menuBtn.contains(e.target) &&
+            dropdownMenu.classList.contains('active')) {
+            dropdownMenu.classList.remove('active');
+        }
+    });
+
     // Text input - Enter key
     const textInput = document.getElementById('textInput');
     if (textInput) {
@@ -159,29 +172,8 @@ async function loadApiKeyFromFirestore() {
     try {
         AppState.apiKey = await getApiKeyFromFirestore();
         console.log('✅ API key loaded from Firestore');
-
-        const apiKeySection = document.getElementById('apiKeySection');
-        if (apiKeySection) {
-            apiKeySection.innerHTML = `
-                <div style="padding: 12px 16px; background: #E8F5E9; border: 1px solid #C8E6C9; border-radius: 6px; color: #2C3E50;">
-                    ✅ API klíč je načten z centrální databáze
-                    <p style="margin-top: 8px; font-size: 13px; color: #5F6368;">Všichni uživatelé sdílí společný API klíč</p>
-                </div>
-            `;
-        }
     } catch (error) {
         console.error('❌ Failed to load API key:', error);
-
-        const apiKeySection = document.getElementById('apiKeySection');
-        if (apiKeySection) {
-            apiKeySection.innerHTML = `
-                <div style="padding: 12px 16px; background: #FFEBEE; border: 1px solid #FFCDD2; border-radius: 6px; color: #C62828;">
-                    ❌ Chyba při načítání API klíče
-                    <p style="margin-top: 8px; font-size: 13px;">Kontaktujte administrátora</p>
-                </div>
-            `;
-        }
-
         throw error;
     }
 }
@@ -918,6 +910,14 @@ function blobToBase64(blob) {
 // =====================================
 // UI FUNCTIONS
 // =====================================
+
+/**
+ * Toggle dropdown menu
+ */
+function toggleMenu() {
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    dropdownMenu.classList.toggle('active');
+}
 
 /**
  * Toggle settings modal
