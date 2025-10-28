@@ -84,8 +84,8 @@
             <h1>🍽️ AI calories count</h1>
             <p>Sledování kalorií s pomocí AI v ver 0.2 - vercel connect</p>
             <div class="header-actions">
-                <button onclick="toggleSettings()" class="settings-btn" id="settingsBtn">⚙️</button>
-                <button onclick="logoutUser()" class="logout-btn" id="logoutBtn">🚪 Odhlásit</button>
+                <button onclick="toggleSettings()" class="settings-btn" id="settingsBtn">⚙️ Nastavení</button>
+                <button onclick="logoutUser()" class="logout-btn" id="logoutBtn">Odhlásit</button>
             </div>
         </header>
 
@@ -94,8 +94,8 @@
             <div class="modal-overlay" onclick="toggleSettings()"></div>
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>⚙️ Nastavení</h2>
-                    <button class="modal-close" onclick="toggleSettings()">✕</button>
+                    <h2>Nastavení</h2>
+                    <button class="modal-close" onclick="toggleSettings()">Zavřít</button>
                 </div>
                 <div class="modal-body">
                     <!-- API klíč -->
@@ -152,7 +152,7 @@
         <section class="input-section">
             <h2>Přidat jídlo</h2>
 
-            <!-- Tab menu -->
+            <!-- Tab menu - iOS Segmented Control Style -->
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('text', event)">📝 Text</button>
                 <button class="tab-btn" onclick="switchTab('photo', event)">📷 Foto</button>
@@ -162,8 +162,8 @@
             <!-- Textový vstup -->
             <div id="textTab" class="tab-content active">
                 <div class="form-group">
-                    <input type="text" id="textInput" placeholder="Napište co jste snědli, např: 'dva rohlíky s máslem a šunkou, jogurt'" />
-                    <button onclick="analyzeText()" class="btn-primary" style="margin-top: 8px;">🔍 Analyzovat</button>
+                    <input type="text" id="textInput" placeholder="Např.: 'dva rohlíky s máslem a šunkou, jogurt'" />
+                    <button onclick="analyzeText()" class="btn-primary" style="margin-top: 12px;">🔍 Analyzovat</button>
                 </div>
             </div>
 
@@ -171,7 +171,7 @@
             <div id="photoTab" class="tab-content">
                 <div class="form-group">
                     <input type="file" id="photoInput" accept="image/*" capture="environment">
-                    <small style="display: block; margin-top: 8px; color: var(--text-secondary); font-size: 0.9em;">Foto se automaticky analyzuje po výběru</small>
+                    <small>📸 Foto se automaticky analyzuje po výběru</small>
                     <div id="photoPreview" class="photo-preview"></div>
                     <div id="photoLoading" class="inline-loading" style="display: none;">
                         <div class="spinner-small"></div>

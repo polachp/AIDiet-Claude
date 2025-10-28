@@ -981,34 +981,22 @@ function updateSummary() {
         const progressFill = document.getElementById('caloriesProgressFill');
         progressFill.style.width = Math.min(caloriesPercent, 100) + '%';
 
-        // Color coding
-        if (caloriesPercent >= 120) {
-            progressFill.style.background = 'rgba(211, 47, 47, 0.95)';
-            caloriesPercentageEl.style.color = '#D32F2F';
+        // Color coding - iOS Style
+        if (caloriesPercent >= 110) {
+            progressFill.style.background = '#FF3B30'; // iOS Red
+            caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '700';
-        } else if (caloriesPercent >= 110) {
-            progressFill.style.background = 'rgba(229, 57, 53, 0.9)';
-            caloriesPercentageEl.style.color = '#E53935';
+        } else if (caloriesPercent >= 95) {
+            progressFill.style.background = '#FF9500'; // iOS Orange
+            caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '700';
-        } else if (caloriesPercent >= 101) {
-            progressFill.style.background = 'rgba(239, 83, 80, 0.85)';
-            caloriesPercentageEl.style.color = '#EF5350';
-            caloriesPercentageEl.style.fontWeight = '700';
-        } else if (caloriesPercent === 100) {
-            progressFill.style.background = 'rgba(76, 175, 80, 0.9)';
-            caloriesPercentageEl.style.color = '#4CAF50';
-            caloriesPercentageEl.style.fontWeight = '600';
-        } else if (caloriesPercent >= 90) {
-            progressFill.style.background = 'rgba(255, 167, 38, 0.9)';
-            caloriesPercentageEl.style.color = '#FF6F00';
-            caloriesPercentageEl.style.fontWeight = '600';
         } else if (caloriesPercent >= 80) {
-            progressFill.style.background = 'rgba(255, 183, 77, 0.85)';
-            caloriesPercentageEl.style.color = '#FF8F00';
+            progressFill.style.background = '#34C759'; // iOS Green
+            caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '600';
         } else {
             progressFill.style.background = 'rgba(255, 255, 255, 0.9)';
-            caloriesPercentageEl.style.color = 'var(--text-primary)';
+            caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '600';
         }
 
@@ -1049,31 +1037,26 @@ function updateMacroBox(type, current, goal) {
 
     const macroBox = document.querySelector(`.macro-box[data-macro="${type}"]`);
     if (macroBox) {
-        const fillHeight = Math.min(percent, 100);
-        macroBox.style.setProperty('--fill-height', fillHeight + '%');
-
+        // iOS design uses color-coded percentages
         if (percentElement) {
-            if (percent >= 120) {
-                percentElement.style.color = '#D32F2F';
+            if (percent >= 110) {
+                percentElement.style.color = '#FF3B30'; // iOS Red
                 percentElement.style.fontWeight = '700';
-            } else if (percent >= 110) {
-                percentElement.style.color = '#E53935';
+            } else if (percent >= 95) {
+                percentElement.style.color = '#FF9500'; // iOS Orange
                 percentElement.style.fontWeight = '700';
-            } else if (percent >= 101) {
-                percentElement.style.color = '#EF5350';
-                percentElement.style.fontWeight = '700';
-            } else if (percent === 100) {
-                percentElement.style.color = '#4CAF50';
-                percentElement.style.fontWeight = '600';
-            } else if (percent >= 90) {
-                percentElement.style.color = '#FF6F00';
-                percentElement.style.fontWeight = '600';
             } else if (percent >= 80) {
-                percentElement.style.color = '#FF8F00';
+                percentElement.style.color = '#34C759'; // iOS Green
                 percentElement.style.fontWeight = '600';
             } else {
-                percentElement.style.color = 'var(--text-primary)';
-                percentElement.style.fontWeight = '500';
+                // Use macro-specific colors for normal range
+                const colors = {
+                    protein: '#FF6B6B',
+                    carbs: '#FFB84D',
+                    fat: '#51CF66'
+                };
+                percentElement.style.color = colors[type] || 'var(--text-primary)';
+                percentElement.style.fontWeight = '700';
             }
         }
     }

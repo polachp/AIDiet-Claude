@@ -1,3 +1,5 @@
+/* ==================== iOS-INSPIRED DESIGN SYSTEM ==================== */
+
 * {
     margin: 0;
     padding: 0;
@@ -5,325 +7,333 @@
 }
 
 :root {
-    /* Professional Conservative Color Palette */
-    --primary-color: #2C3E50;
-    --primary-dark: #1A252F;
-    --secondary-color: #34495E;
-    --success-color: #27AE60;
-    --danger-color: #7F8C8D;
-    --warning-color: #95A5A6;
-    --info-color: #5D6D7E;
+    /* iOS Color Palette */
+    --ios-blue: #007AFF;
+    --ios-blue-dark: #0051D5;
+    --ios-red: #FF3B30;
+    --ios-red-dark: #D70015;
+    --ios-green: #34C759;
+    --ios-orange: #FF9500;
+    --ios-gray: #8E8E93;
+    --ios-gray-light: #C7C7CC;
+    --ios-gray-extralight: #E5E5EA;
 
-    /* Backgrounds */
-    --background: #F5F6FA;
-    --card-background: #FFFFFF;
-    --card-hover: #F8F9FA;
-    --overlay: rgba(0, 0, 0, 0.4);
+    /* Backgrounds - iOS Style */
+    --bg-primary: #F2F2F7;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F9F9F9;
+    --bg-elevated: #FFFFFF;
 
-    /* Text - Professional Typography */
-    --text-primary: #2C3E50;
-    --text-secondary: #7F8C8D;
-    --text-tertiary: #BDC3C7;
-    --text-white: #ffffff;
+    /* Text Colors - iOS Style */
+    --text-primary: #000000;
+    --text-secondary: #3C3C43;
+    --text-tertiary: #8E8E93;
+    --text-quaternary: #C7C7CC;
+    --text-white: #FFFFFF;
 
     /* Borders */
-    --border-color: #E0E4E8;
-    --border-color-hover: #BDC3C7;
-    --separator: rgba(44, 62, 80, 0.1);
+    --border-color: #E5E5EA;
+    --border-color-hover: #C7C7CC;
+    --separator: rgba(60, 60, 67, 0.18);
 
-    /* Shadows - Minimal Flat Design */
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03);
-    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.04);
-    --shadow-xl: 0 3px 8px rgba(0, 0, 0, 0.05);
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.03);
+    /* Shadows - iOS Style (soft, layered) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
 
-    /* Macro colors - Pastel colors matching icons */
-    --color-calories: #5D6D7E;
-    --color-protein: #EF9A9A;     /* 🥩 Pastelově růžová (maso) */
-    --color-carbs: #FFE082;       /* 🌾 Pastelově zlatá (obilí) */
-    --color-fat: #A5D6A7;         /* 🥑 Pastelově zelená (avokádo) */
+    /* Macro Colors - Vibrant iOS Style */
+    --color-protein: #FF6B6B;
+    --color-carbs: #FFB84D;
+    --color-fat: #51CF66;
+    --color-calories: #007AFF;
 
-    /* Solid colors for borders/accents */
-    --color-calories-solid: #5D6D7E;
-    --color-protein-solid: #E57373;
-    --color-carbs-solid: #FFD54F;
-    --color-fat-solid: #81C784;
-
-    /* Border radius - Flatter style */
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 8px;
-    --radius-xl: 10px;
-    --radius-2xl: 12px;
-    --radius-3xl: 14px;
+    /* Border Radius - iOS Style (larger, softer) */
+    --radius-xs: 6px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
     --radius-full: 9999px;
 
-    /* Spacing - Professional style */
+    /* Spacing - iOS 8px Grid */
     --space-xs: 4px;
     --space-sm: 8px;
     --space-md: 12px;
     --space-lg: 16px;
     --space-xl: 20px;
     --space-2xl: 24px;
+    --space-3xl: 32px;
 
-    /* Transitions - Professional style */
-    --transition-fast: 120ms ease;
-    --transition-base: 200ms ease;
-    --transition-slow: 300ms ease;
+    /* Transitions - iOS Style (smooth, natural) */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ==================== GLOBAL STYLES ==================== */
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    background: var(--background);
-    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--bg-primary);
     color: var(--text-primary);
-    line-height: 1.5;
-    font-size: 15px;
+    line-height: 1.47;
+    font-size: 17px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     min-height: 100vh;
+    padding-bottom: 80px;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 640px;
     margin: 0 auto;
-    padding: var(--space-md) var(--space-sm);
+    padding: var(--space-lg) var(--space-lg);
 }
 
-/* Header - Professional Style */
-header {
-    text-align: center;
-    padding: var(--space-lg) var(--space-md);
-    background: var(--card-background);
-    color: var(--text-primary);
-    border-radius: var(--radius-xl);
-    margin-bottom: var(--space-md);
-    box-shadow: var(--shadow-card);
-    position: relative;
-    border: 1px solid var(--border-color);
-}
+/* ==================== TYPOGRAPHY - iOS Style ==================== */
 
-header::before {
-    display: none;
-}
-
-header::after {
-    display: none;
-}
-
-@keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-20px, 20px) scale(1.05); }
-}
-
-header * {
-    position: relative;
-    z-index: 1;
-}
-
-
-header h1 {
-    font-size: 1.8em;
+h1 {
+    font-size: 34px;
     font-weight: 700;
-    margin-bottom: var(--space-xs);
-    color: var(--text-primary);
-}
-
-header p {
-    font-size: 0.9em;
-    font-weight: 400;
-    color: var(--text-secondary);
-}
-
-/* Sections - Professional Card Style */
-section {
-    background: var(--card-background);
-    padding: var(--space-lg) var(--space-md);
-    margin-bottom: var(--space-md);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-card);
-    border: 1px solid var(--border-color);
-    transition: all var(--transition-base);
-    position: relative;
-}
-
-section::before {
-    display: none;
-}
-
-section:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--border-color);
+    letter-spacing: -0.5px;
 }
 
 h2 {
-    margin-bottom: var(--space-md);
-    color: var(--text-primary);
-    font-size: 1.2em;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    margin-bottom: var(--space-lg);
 }
 
+h3 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+/* ==================== HEADER - iOS Large Title Style ==================== */
+
+header {
+    background: transparent;
+    padding: var(--space-xl) 0;
+    margin-bottom: var(--space-lg);
+    text-align: left;
+    position: relative;
+}
+
+header h1 {
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+    letter-spacing: -0.8px;
+}
+
+header p {
+    font-size: 15px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+    margin-top: var(--space-xs);
+}
+
+.header-actions {
+    position: absolute;
+    top: var(--space-lg);
+    right: 0;
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.settings-btn,
+.logout-btn {
+    background: var(--bg-elevated);
+    color: var(--ios-blue);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-btn:hover,
+.logout-btn:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.settings-btn:active,
+.logout-btn:active {
+    transform: scale(0.95);
+}
+
+.logout-btn {
+    color: var(--ios-red);
+}
+
+/* ==================== SECTIONS - iOS Card Style ==================== */
+
+section {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+section h2 {
+    padding: var(--space-lg) var(--space-lg) 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ==================== FORM ELEMENTS - iOS Style ==================== */
+
 .form-group {
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-lg);
 }
 
 label {
     display: block;
-    margin-bottom: var(--space-xs);
-    font-weight: 600;
-    font-size: 12px;
-    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-tertiary);
     text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 input[type="text"],
+input[type="email"],
 input[type="password"],
 input[type="number"],
 select,
 textarea {
     width: 100%;
-    padding: 8px 12px;
+    padding: 12px 16px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    font-size: 15px;
-    transition: all var(--transition-base);
+    font-size: 17px;
     font-family: inherit;
-    background: var(--card-background);
+    background: var(--bg-secondary);
     color: var(--text-primary);
-    font-weight: 400;
-}
-
-input[type="text"]:hover,
-input[type="password"]:hover,
-input[type="number"]:hover,
-select:hover,
-textarea:hover {
-    border-color: var(--border-color-hover);
+    transition: all var(--transition-base);
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 44px;
 }
 
 input[type="text"]:focus,
+input[type="email"]:focus,
 input[type="password"]:focus,
 input[type="number"]:focus,
 select:focus,
 textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.1);
-}
-
-/* User data section */
-.user-data-section {
-    margin-top: var(--space-xl);
-    padding-top: var(--space-xl);
-    border-top: 1px solid var(--border-color);
-}
-
-.user-data-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: var(--space-md);
-    margin-top: var(--space-md);
+    border-color: var(--ios-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 select {
     cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232C3E50' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238E8E93' d='M6 8L0 2l1.41-1.41L6 5.17l4.59-4.58L12 2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 36px;
+    background-position: right 16px center;
+    padding-right: 40px;
 }
 
 input[type="file"] {
     width: 100%;
-    padding: var(--space-md);
-    border: 1px dashed var(--border-color);
-    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    margin-bottom: var(--space-sm);
     transition: all var(--transition-base);
-    background: var(--card-hover);
+    background: var(--bg-tertiary);
     color: var(--text-secondary);
-    font-size: 14px;
-    font-weight: 400;
+    font-size: 15px;
+    text-align: center;
+    min-height: 44px;
 }
 
 input[type="file"]:hover {
-    border-color: var(--primary-color);
-    background: var(--card-hover);
-    color: var(--text-primary);
+    border-color: var(--ios-blue);
+    background: var(--bg-secondary);
 }
 
 small {
     display: block;
     margin-top: var(--space-sm);
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     font-size: 13px;
     line-height: 1.5;
 }
 
 small a {
-    color: var(--primary-color);
+    color: var(--ios-blue);
     text-decoration: none;
     font-weight: 600;
-    transition: color var(--transition-fast);
 }
 
 small a:hover {
-    color: var(--primary-dark);
     text-decoration: underline;
 }
 
-/* Buttons - Professional Style */
+/* ==================== BUTTONS - iOS Style ==================== */
+
 button {
-    padding: 10px 20px;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 600;
     border: none;
     border-radius: var(--radius-md);
-    font-size: 15px;
     cursor: pointer;
-    transition: all var(--transition-base);
-    font-weight: 600;
-    font-family: inherit;
-    position: relative;
-}
-
-button::before {
-    display: none;
+    transition: all var(--transition-fast);
+    min-height: 50px;
+    padding: 0 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary {
-    background: var(--primary-color);
-    color: white;
+    background: var(--ios-blue);
+    color: var(--text-white);
     width: 100%;
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-    background: var(--primary-dark);
+    background: var(--ios-blue-dark);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
 }
 
 .btn-primary:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
 }
 
 .btn-secondary {
-    background: var(--secondary-color);
-    color: white;
-    width: 100%;
-    margin-top: var(--space-sm);
+    background: var(--bg-tertiary);
+    color: var(--ios-blue);
+    border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: var(--primary-dark);
+    background: var(--bg-secondary);
+    border-color: var(--ios-blue);
 }
 
 .btn-secondary:active {
-    transform: scale(0.98);
+    transform: scale(0.96);
 }
 
 button:disabled {
@@ -332,54 +342,56 @@ button:disabled {
     transform: none !important;
 }
 
-/* Tabs - Professional Style */
+/* ==================== TABS - iOS Segmented Control Style ==================== */
+
 .tabs {
     display: flex;
-    gap: 4px;
-    margin-bottom: var(--space-md);
-    background: var(--card-hover);
-    padding: 4px;
+    gap: 0;
+    margin-bottom: var(--space-xl);
+    background: var(--bg-tertiary);
+    padding: 2px;
     border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .tab-btn {
     flex: 1;
-    padding: 8px 12px;
+    padding: 10px 16px;
     background: transparent;
     border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: 14px;
+    border-radius: calc(var(--radius-md) - 2px);
+    font-size: 15px;
     font-weight: 600;
-    color: var(--text-secondary);
-    transition: all var(--transition-base);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    min-height: 44px;
 }
 
 .tab-btn:hover {
-    background: rgba(44, 62, 80, 0.05);
-    color: var(--text-primary);
+    opacity: 0.7;
 }
 
 .tab-btn.active {
-    background: var(--card-background);
+    background: var(--bg-elevated);
     color: var(--text-primary);
     box-shadow: var(--shadow-sm);
 }
 
 .tab-content {
     display: none;
+    padding: var(--space-lg);
 }
 
 .tab-content.active {
     display: block;
-    animation: fadeInUp 0.3s ease;
+    animation: fadeIn 0.2s ease;
 }
 
-@keyframes fadeInUp {
+@keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(4px);
     }
     to {
         opacity: 1;
@@ -387,43 +399,47 @@ button:disabled {
     }
 }
 
-/* Photo preview - Professional Style */
+/* ==================== INPUT SECTION ==================== */
+
+.input-section {
+    padding-bottom: var(--space-lg);
+}
+
+.input-section h2 {
+    padding-bottom: var(--space-md);
+}
+
+/* ==================== PHOTO PREVIEW ==================== */
+
 .photo-preview {
-    margin-top: var(--space-md);
+    margin-top: var(--space-lg);
     text-align: center;
 }
 
 .photo-preview img {
     max-width: 100%;
-    max-height: 350px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
-    border: 1px solid var(--border-color);
-    transition: transform var(--transition-base);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
 }
 
-.photo-preview img:hover {
-    transform: scale(1.01);
-}
+/* ==================== LOADING INDICATORS - iOS Style ==================== */
 
-/* Loading - Professional Style */
 .loading {
     text-align: center;
-    padding: var(--space-xl);
-    background: var(--card-background);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    margin-top: var(--space-md);
+    padding: var(--space-2xl);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    margin-top: var(--space-lg);
 }
 
 .spinner {
-    border: 3px solid var(--border-color);
-    border-top-color: var(--primary-color);
+    border: 3px solid var(--ios-gray-extralight);
+    border-top-color: var(--ios-blue);
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     animation: spin 0.8s linear infinite;
-    margin: 0 auto var(--space-md);
+    margin: 0 auto var(--space-lg);
 }
 
 @keyframes spin {
@@ -431,471 +447,86 @@ button:disabled {
     100% { transform: rotate(360deg); }
 }
 
-/* Inline Loading Indicators - Professional Style */
 .inline-loading {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-md);
-    background: var(--card-background);
-    border: 1px solid var(--border-color);
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--bg-tertiary);
     border-radius: var(--radius-md);
-    margin-top: var(--space-md);
+    margin-top: var(--space-lg);
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .spinner-small {
-    border: 2px solid var(--border-color);
-    border-top-color: var(--primary-color);
+    border: 2px solid var(--ios-gray-extralight);
+    border-top-color: var(--ios-blue);
     border-radius: 50%;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     animation: spin 0.8s linear infinite;
     flex-shrink: 0;
 }
 
-/* Daily Summary */
+/* ==================== DAILY SUMMARY - iOS Style ==================== */
+
 .daily-summary {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
+    padding: var(--space-lg);
 }
 
-.summary-cards {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-}
-
-/* Main calories card - Flat Professional Style */
+/* Main Calories Card - iOS Widget Style */
 .calories-main {
-    background: var(--color-calories);
-    border: 1px solid var(--border-color);
-    padding: var(--space-xl) var(--space-lg);
-    border-radius: var(--radius-md);
-    text-align: left;
-    box-shadow: var(--shadow-sm);
+    background: linear-gradient(135deg, var(--ios-blue) 0%, #0051D5 100%);
+    padding: var(--space-2xl);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-lg);
     position: relative;
     overflow: hidden;
-    transition: border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .calories-main::before {
-    display: none;
-}
-
-.calories-main::after {
-    display: none;
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 0.6; }
-    50% { transform: scale(1.08); opacity: 0.9; }
-}
-
-.calories-main .summary-value {
-    font-size: 3.5em;
-    font-weight: 700;
-    color: var(--text-white);
-    margin-bottom: var(--space-xs);
-    position: relative;
-    z-index: 1;
-}
-
-.calories-main .summary-label {
-    font-size: 0.95em;
-    color: rgba(255, 255, 255, 0.9);
-    text-transform: capitalize;
-    font-weight: 500;
-    position: relative;
-    z-index: 1;
-}
-
-/* Makroživiny - minimalistické boxy */
-.macros-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-md);
-    margin-top: var(--space-sm);
-}
-
-.macro-box {
-    background: var(--card-background);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: var(--space-xl) var(--space-lg);
-    text-align: center;
-    transition: all var(--transition-base);
-    position: relative;
-    overflow: hidden;
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-/* Rising fill background - roste odspodu */
-.macro-box::before {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: var(--fill-height, 0%);
-    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 0;
-    border-radius: var(--radius-md);
+    top: -50%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    pointer-events: none;
 }
-
-/* 🥩 Protein - růžový gradient (maso) */
-.macro-box[data-macro="protein"]::before {
-    background: linear-gradient(to top, rgba(239, 154, 154, 0.4), rgba(239, 154, 154, 0.08));
-}
-
-/* 🌾 Carbs - zlatý gradient (obilí) */
-.macro-box[data-macro="carbs"]::before {
-    background: linear-gradient(to top, rgba(255, 224, 130, 0.5), rgba(255, 224, 130, 0.1));
-}
-
-/* 🥑 Fat - zelený gradient (avokádo) */
-.macro-box[data-macro="fat"]::before {
-    background: linear-gradient(to top, rgba(165, 214, 167, 0.45), rgba(165, 214, 167, 0.1));
-}
-
-.macro-box:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-}
-
-.macro-box-icon {
-    font-size: 2em;
-    margin-bottom: var(--space-sm);
-    opacity: 0.9;
-    position: relative;
-    z-index: 1;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-}
-
-.macro-box-label {
-    font-size: 0.9em;
-    color: #5D6D7E;
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--space-sm);
-    position: relative;
-    z-index: 1;
-}
-
-/* PROCENTA - hlavní číslo, největší a nejvýraznější */
-.macro-box-percent {
-    font-size: 3em;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: var(--space-xs);
-    display: block;
-    line-height: 1;
-    position: relative;
-    z-index: 1;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-    transition: color var(--transition-base), font-weight var(--transition-base);
-}
-
-/* GRAMY - vedlejší info, menší a méně výrazné */
-.macro-box-value {
-    font-size: 1.35em;
-    font-weight: 700;
-    color: #34495E;
-    margin-bottom: 4px;
-    position: relative;
-    z-index: 1;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-}
-
-.macro-box-goal {
-    font-size: 0.95em;
-    color: #5D6D7E;
-    font-weight: 600;
-    margin-bottom: 0;
-    position: relative;
-    z-index: 1;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-    .macros-grid {
-        grid-template-columns: 1fr;
-        gap: var(--space-sm);
-    }
-
-    .macro-box {
-        padding: var(--space-lg) var(--space-md);
-        min-height: 160px;
-    }
-
-    .macro-box-percent {
-        font-size: 2.5em;
-    }
-
-    .macro-box-value {
-        font-size: 1.2em;
-    }
-
-    .macro-box-label {
-        font-size: 0.85em;
-    }
-
-    .macro-box-goal {
-        font-size: 0.9em;
-    }
-}
-
-/* Meals List - Professional Card Style */
-.meals-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-}
-
-.empty-state {
-    text-align: center;
-    color: var(--text-secondary);
-    padding: var(--space-xl) var(--space-md);
-    font-size: 14px;
-    font-weight: 400;
-    background: var(--card-hover);
-    border-radius: var(--radius-md);
-    border: 1px dashed var(--border-color);
-}
-
-.meal-item {
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    transition: all var(--transition-base);
-    background: var(--card-background);
-    box-shadow: var(--shadow-card);
-    position: relative;
-}
-
-.meal-item::before {
-    display: none;
-}
-
-.meal-item:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-.meal-info {
-    flex: 1;
-}
-
-.meal-name {
-    font-weight: 600;
-    font-size: 1em;
-    margin-bottom: var(--space-xs);
-    color: var(--text-primary);
-}
-
-.meal-time {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: var(--space-sm);
-    font-weight: 500;
-}
-
-.meal-nutrition {
-    display: flex;
-    gap: var(--space-xs);
-    flex-wrap: wrap;
-}
-
-.nutrition-item {
-    font-size: 13px;
-    padding: 4px 10px;
-    background: var(--card-hover);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-    transition: all var(--transition-fast);
-    white-space: nowrap;
-}
-
-.nutrition-item:hover {
-    background: var(--card-hover);
-    border-color: var(--primary-color);
-}
-
-.nutrition-item strong {
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-.meal-actions {
-    display: flex;
-    gap: var(--space-xs);
-    align-items: flex-start;
-}
-
-.btn-delete {
-    background: var(--danger-color);
-    color: white;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-base);
-}
-
-.btn-delete:hover {
-    background: #6C7A89;
-}
-
-.btn-delete:active {
-    transform: scale(0.95);
-}
-
-/* Responsive Design - Mobile First */
-@media (max-width: 768px) {
-    body {
-        font-size: 14px;
-    }
-
-    .container {
-        max-width: 100%;
-        padding: var(--space-sm);
-    }
-
-    header {
-        padding: var(--space-lg) var(--space-md);
-        border-radius: var(--radius-md);
-        margin-bottom: var(--space-md);
-    }
-
-    header h1 {
-        font-size: 1.6em;
-    }
-
-    header p {
-        font-size: 0.9em;
-    }
-
-    section {
-        padding: var(--space-md);
-        border-radius: var(--radius-md);
-    }
-
-    h2 {
-        font-size: 1.15em;
-        margin-bottom: var(--space-md);
-    }
-
-    .calories-main {
-        padding: var(--space-lg) var(--space-md);
-        border-radius: var(--radius-md);
-    }
-
-    .calories-main .summary-value {
-        font-size: 3em;
-    }
-
-    .calories-main .summary-label {
-        font-size: 0.9em;
-    }
-
-    .user-data-grid {
-        grid-template-columns: 1fr;
-        gap: var(--space-sm);
-    }
-
-    .tabs {
-        gap: 4px;
-        padding: 4px;
-    }
-
-    .tab-btn {
-        padding: 8px 10px;
-        font-size: 13px;
-    }
-
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    select,
-    textarea {
-        font-size: 16px; /* Prevents zoom on iOS */
-        padding: 10px 12px;
-    }
-
-    button {
-        padding: 10px 18px;
-        font-size: 14px;
-    }
-
-    .meal-item {
-        flex-direction: column;
-        gap: var(--space-sm);
-        padding: var(--space-md);
-    }
-
-    .meal-actions {
-        margin-top: var(--space-xs);
-        width: 100%;
-    }
-
-    .btn-delete {
-        width: 100%;
-        padding: 10px;
-    }
-
-    .nutrition-item {
-        font-size: 12px;
-        padding: 4px 8px;
-    }
-}
-
-/* Professional Percentage-Based Calories Display */
 
 .calories-header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    margin-bottom: var(--space-md);
-    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+    position: relative;
+    z-index: 1;
 }
 
 .calories-percentage {
-    font-size: 4em;
+    font-size: 56px;
     font-weight: 700;
     color: var(--text-white);
-    margin-bottom: 0;
-    position: relative;
-    z-index: 1;
     line-height: 1;
-    transition: color var(--transition-base), font-weight var(--transition-base);
+    letter-spacing: -2px;
 }
 
 .calories-secondary {
-    font-size: 1.5em;
-    color: rgba(255, 255, 255, 0.95);
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.9);
     font-weight: 600;
-    position: relative;
-    z-index: 1;
     text-align: right;
-    white-space: nowrap;
 }
 
 .calories-progress-bar {
     width: 100%;
-    height: 50px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: var(--radius-sm);
+    height: 8px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: var(--radius-full);
     overflow: hidden;
     position: relative;
     z-index: 1;
@@ -903,142 +534,202 @@ button:disabled {
 
 .calories-progress-fill {
     height: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: var(--radius-sm);
-    transition: width 0.6s ease, background 0.3s ease;
+    background: var(--text-white);
+    border-radius: var(--radius-full);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Professional Meal Item Card - New Clean Layout */
-.meal-item-compact {
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
+/* Macros Grid - iOS Cards */
+.macros-grid {
     display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-md);
-    transition: all var(--transition-base);
-    background: var(--card-background);
-    box-shadow: var(--shadow-card);
-    position: relative;
 }
 
-.meal-item-compact:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+.macro-box {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.macro-box:active {
+    transform: scale(0.96);
+}
+
+.macro-box-icon {
+    font-size: 32px;
+    margin-bottom: var(--space-sm);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.macro-box-label {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-xs);
+}
+
+.macro-box-percent {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+    line-height: 1;
+}
+
+.macro-box-value {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.macro-box-goal {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+/* Macro-specific accent colors */
+.macro-box[data-macro="protein"] .macro-box-percent {
+    color: var(--color-protein);
+}
+
+.macro-box[data-macro="carbs"] .macro-box-percent {
+    color: var(--color-carbs);
+}
+
+.macro-box[data-macro="fat"] .macro-box-percent {
+    color: var(--color-fat);
+}
+
+/* ==================== MEALS LIST - iOS List Style ==================== */
+
+.meals-section {
+    padding: 0;
+}
+
+.meals-section h2 {
+    padding: var(--space-lg);
+}
+
+.meals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: var(--space-3xl) var(--space-lg);
+    font-size: 15px;
+}
+
+/* iOS List-Style Meal Items */
+.meal-item-compact {
+    display: flex;
+    align-items: center;
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--separator);
+    background: var(--bg-elevated);
+    transition: background var(--transition-fast);
+    min-height: 64px;
+}
+
+.meal-item-compact:last-child {
+    border-bottom: none;
+}
+
+.meal-item-compact:active {
+    background: var(--bg-tertiary);
 }
 
 .meal-left {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
+    flex: 1;
+    min-width: 0;
 }
 
 .meal-name-compact {
-    font-weight: 600;
-    font-size: 1em;
+    font-size: 17px;
+    font-weight: 400;
     color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .meal-meta {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    flex-wrap: wrap;
 }
 
 .meal-percent-badge {
     display: inline-block;
-    background: var(--card-hover);
-    color: var(--text-secondary);
-    padding: 3px 10px;
-    border-radius: var(--radius-sm);
-    font-size: 0.8em;
-    font-weight: 600;
-    border: 1px solid var(--border-color);
+    background: var(--ios-blue);
+    color: var(--text-white);
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .meal-calories {
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-weight: 400;
 }
 
 .meal-right {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    justify-self: end;
+    margin-left: var(--space-lg);
 }
 
 .meal-macro-item {
-    font-size: 0.9em;
-    color: var(--text-primary);
+    font-size: 13px;
+    color: var(--text-secondary);
     font-weight: 500;
     white-space: nowrap;
 }
 
 .btn-delete-compact {
-    background: var(--danger-color);
-    color: var(--text-white);
-    padding: 6px 12px;
-    font-size: 0.9em;
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-base);
-    border: none;
-    cursor: pointer;
-    flex-shrink: 0;
-    white-space: nowrap;
+    background: transparent;
+    color: var(--ios-red);
+    padding: 8px;
+    font-size: 20px;
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: var(--radius-md);
+    margin-left: var(--space-sm);
 }
 
 .btn-delete-compact:hover {
-    background: #6C7A89;
+    background: rgba(255, 59, 48, 0.1);
 }
 
 .btn-delete-compact:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
 }
 
-/* Compact Meal Item - Mobile Responsive */
-@media (max-width: 768px) {
-    .calories-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-sm);
-        margin-bottom: var(--space-sm);
-    }
+/* ==================== MODAL - iOS Sheet Style ==================== */
 
-    .calories-percentage {
-        font-size: 3.5em;
-    }
-
-    .calories-secondary {
-        font-size: 1.2em;
-        text-align: left;
-    }
-
-    .calories-progress-bar {
-        height: 50px;
-    }
-
-    .meal-item-compact {
-        grid-template-columns: 1fr;
-        gap: var(--space-md);
-        padding: var(--space-md);
-    }
-
-    .meal-right {
-        justify-self: start;
-        flex-wrap: wrap;
-        gap: var(--space-sm);
-    }
-
-    .btn-delete-compact {
-        width: 100%;
-        padding: 10px;
-    }
-}
-
-/* Modal Styles - Conservative Flat Design */
 .modal {
     display: none;
     position: fixed;
@@ -1047,15 +738,12 @@ button:disabled {
     width: 100%;
     height: 100%;
     z-index: 1000;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    opacity: 0;
-    transition: opacity var(--transition-base);
 }
 
 .modal.active {
     display: flex;
-    opacity: 1;
 }
 
 .modal-overlay {
@@ -1064,82 +752,87 @@ button:disabled {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(44, 62, 80, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     cursor: pointer;
+    animation: fadeIn 0.2s ease;
 }
 
 .modal-content {
     position: relative;
-    background: var(--card-background);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    width: 90%;
-    max-width: 600px;
-    max-height: 85vh;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border-color);
-    animation: modalSlideIn 0.3s ease;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 0 auto;
 }
 
-@keyframes modalSlideIn {
+@keyframes slideUp {
     from {
-        transform: translateY(-20px);
-        opacity: 0;
+        transform: translateY(100%);
     }
     to {
         transform: translateY(0);
-        opacity: 1;
     }
 }
 
 .modal-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: var(--space-lg) var(--space-lg) var(--space-md);
-    border-bottom: 1px solid var(--border-color);
+    justify-content: center;
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--separator);
     flex-shrink: 0;
+    position: relative;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 5px;
+    background: var(--ios-gray-light);
+    border-radius: var(--radius-full);
 }
 
 .modal-header h2 {
     margin: 0;
+    padding: var(--space-md) 0 0;
+    font-size: 17px;
+    font-weight: 600;
     color: var(--text-primary);
-    font-size: 1.3em;
-    font-weight: 700;
+    text-align: center;
 }
 
 .modal-close {
-    background: var(--card-hover);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    font-size: 1.2em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    padding: 0;
-    line-height: 1;
+    position: absolute;
+    right: var(--space-lg);
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    color: var(--ios-blue);
+    font-size: 17px;
+    font-weight: 600;
+    padding: 8px 16px;
+    min-height: auto;
 }
 
 .modal-close:hover {
-    background: var(--primary-color);
-    color: var(--text-white);
-    border-color: var(--primary-color);
-}
-
-.modal-close:active {
-    transform: scale(0.95);
+    opacity: 0.7;
 }
 
 .modal-body {
     padding: var(--space-lg);
     overflow-y: auto;
     flex: 1;
+    -webkit-overflow-scrolling: touch;
 }
 
 .modal-body::-webkit-scrollbar {
@@ -1147,124 +840,85 @@ button:disabled {
 }
 
 .modal-body::-webkit-scrollbar-track {
-    background: var(--card-hover);
-    border-radius: var(--radius-sm);
+    background: transparent;
 }
 
 .modal-body::-webkit-scrollbar-thumb {
-    background: var(--border-color-hover);
-    border-radius: var(--radius-sm);
+    background: var(--ios-gray-light);
+    border-radius: var(--radius-full);
 }
 
-.modal-body::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
+/* User Data Section in Modal */
+.user-data-section {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--separator);
 }
 
-/* Modal Responsive Design */
-@media (max-width: 768px) {
-    .modal-content {
-        width: 95%;
-        max-height: 90vh;
-        border-radius: var(--radius-md);
-    }
-
-    .modal-header {
-        padding: var(--space-md);
-    }
-
-    .modal-header h2 {
-        font-size: 1.15em;
-    }
-
-    .modal-body {
-        padding: var(--space-md);
-    }
-
-    .modal-close {
-        width: 28px;
-        height: 28px;
-        font-size: 1.1em;
-    }
+.user-data-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
 }
 
-/* ==================== AUTHENTICATION UI ==================== */
+/* ==================== AUTHENTICATION UI - iOS Style ==================== */
 
-/* Auth Screen - Full Page Overlay */
 .auth-screen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(135deg, var(--ios-blue) 0%, #0051D5 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2000;
-    padding: var(--space-md);
+    padding: var(--space-lg);
 }
 
-/* Auth Container */
 .auth-container {
-    background: var(--card-background);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    padding: var(--space-2xl);
-    max-width: 420px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-3xl) var(--space-2xl);
+    max-width: 400px;
     width: 100%;
-    animation: authFadeIn 0.4s ease;
+    animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes authFadeIn {
+@keyframes scaleIn {
     from {
         opacity: 0;
-        transform: translateY(-30px);
+        transform: scale(0.9);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1);
     }
 }
 
-/* Auth Header */
 .auth-header {
     text-align: center;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: var(--space-3xl);
 }
 
 .auth-header h1 {
-    font-size: 2.2em;
-    color: var(--text-primary);
-    margin-bottom: var(--space-xs);
-    font-weight: 700;
+    font-size: 48px;
+    margin-bottom: var(--space-sm);
 }
 
 .auth-header p {
     color: var(--text-secondary);
-    font-size: 1em;
-}
-
-/* Auth Form */
-.auth-form {
-    animation: formSlideIn 0.3s ease;
-}
-
-@keyframes formSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    font-size: 17px;
 }
 
 .auth-form h2 {
-    font-size: 1.5em;
-    color: var(--text-primary);
-    margin-bottom: var(--space-lg);
-    font-weight: 600;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: var(--space-xl);
+    text-align: center;
 }
 
 .auth-form .form-group {
@@ -1272,73 +926,43 @@ button:disabled {
 }
 
 .auth-form label {
-    display: block;
-    margin-bottom: var(--space-xs);
-    color: var(--text-primary);
-    font-weight: 500;
-    font-size: 0.95em;
+    font-size: 15px;
+    color: var(--text-secondary);
+    text-transform: none;
+    font-weight: 400;
 }
 
-.auth-form input {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-size: 1em;
-    transition: all var(--transition-base);
-    background: var(--card-background);
-    color: var(--text-primary);
-}
-
-.auth-form input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
-}
-
-/* Full Width Button */
 .btn-full {
     width: 100%;
     margin-bottom: var(--space-md);
 }
 
-/* Google Sign-In Button */
 .btn-google {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-sm);
+    gap: var(--space-md);
     padding: 12px 20px;
-    background: var(--card-background);
+    background: var(--bg-elevated);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-size: 1em;
     font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    text-align: center;
+    min-height: 50px;
 }
 
 .btn-google:hover {
-    background: var(--card-hover);
+    background: var(--bg-tertiary);
     border-color: var(--border-color-hover);
-    box-shadow: var(--shadow-md);
-}
-
-.btn-google:active {
-    transform: scale(0.98);
 }
 
 .btn-google svg {
     flex-shrink: 0;
 }
 
-/* Auth Divider */
 .auth-divider {
     position: relative;
     text-align: center;
-    margin: var(--space-lg) 0;
+    margin: var(--space-xl) 0;
 }
 
 .auth-divider::before {
@@ -1348,141 +972,224 @@ button:disabled {
     left: 0;
     right: 0;
     height: 1px;
-    background: var(--border-color);
+    background: var(--separator);
 }
 
 .auth-divider span {
     position: relative;
     display: inline-block;
-    padding: 0 var(--space-md);
-    background: var(--card-background);
-    color: var(--text-secondary);
-    font-size: 0.9em;
+    padding: 0 var(--space-lg);
+    background: var(--bg-elevated);
+    color: var(--text-tertiary);
+    font-size: 15px;
 }
 
-/* Auth Switch (Register/Login Toggle) */
 .auth-switch {
     text-align: center;
-    margin-top: var(--space-lg);
+    margin-top: var(--space-xl);
     color: var(--text-secondary);
-    font-size: 0.95em;
+    font-size: 15px;
 }
 
 .auth-switch a {
-    color: var(--primary-color);
+    color: var(--ios-blue);
     text-decoration: none;
     font-weight: 600;
-    transition: color var(--transition-base);
 }
 
 .auth-switch a:hover {
-    color: var(--primary-dark);
     text-decoration: underline;
 }
 
-/* Auth Message (Error/Success) */
 .auth-message {
-    padding: var(--space-md);
+    padding: var(--space-lg);
     border-radius: var(--radius-md);
     margin-top: var(--space-lg);
-    font-size: 0.95em;
-    animation: messageSlideIn 0.3s ease;
-}
-
-@keyframes messageSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    font-size: 15px;
+    text-align: center;
 }
 
 .auth-message.error {
-    background: rgba(231, 76, 60, 0.1);
-    color: #C0392B;
-    border: 1px solid rgba(231, 76, 60, 0.2);
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--ios-red);
 }
 
 .auth-message.success {
-    background: rgba(39, 174, 96, 0.1);
-    color: #27AE60;
-    border: 1px solid rgba(39, 174, 96, 0.2);
+    background: rgba(52, 199, 89, 0.1);
+    color: var(--ios-green);
 }
 
-/* Header Actions (Settings + Logout) */
-.header-actions {
-    position: absolute;
-    top: var(--space-lg);
-    right: var(--space-lg);
-    display: flex;
-    gap: var(--space-sm);
-    align-items: center;
-}
+/* ==================== RESPONSIVE DESIGN - Mobile First ==================== */
 
-.settings-btn,
-.logout-btn {
-    background: var(--card-background);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    padding: 8px 16px;
-    border-radius: var(--radius-md);
-    font-size: 0.95em;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-weight: 500;
-}
-
-.settings-btn:hover,
-.logout-btn:hover {
-    background: var(--card-hover);
-    border-color: var(--border-color-hover);
-    box-shadow: var(--shadow-sm);
-}
-
-.settings-btn:active,
-.logout-btn:active {
-    transform: scale(0.95);
-}
-
-.logout-btn {
-    background: var(--danger-color);
-    color: var(--text-white);
-    border-color: var(--danger-color);
-}
-
-.logout-btn:hover {
-    background: #6C7A89;
-    border-color: #6C7A89;
-}
-
-/* Responsive Auth UI */
 @media (max-width: 768px) {
-    .auth-container {
-        padding: var(--space-lg);
+    body {
+        font-size: 16px;
+        padding-bottom: 60px;
+    }
+
+    .container {
+        padding: var(--space-md);
         max-width: 100%;
     }
 
-    .auth-header h1 {
-        font-size: 1.8em;
+    header {
+        padding: var(--space-lg) 0;
     }
 
-    .auth-form h2 {
-        font-size: 1.3em;
+    header h1 {
+        font-size: 28px;
     }
 
     .header-actions {
         position: static;
-        justify-content: center;
-        margin-top: var(--space-lg);
-        flex-wrap: wrap;
+        justify-content: flex-start;
+        margin-top: var(--space-md);
     }
 
-    .settings-btn,
-    .logout-btn {
-        padding: 8px 14px;
-        font-size: 0.9em;
+    h2 {
+        font-size: 20px;
+    }
+
+    .calories-main {
+        padding: var(--space-xl);
+    }
+
+    .calories-percentage {
+        font-size: 48px;
+    }
+
+    .calories-secondary {
+        font-size: 15px;
+    }
+
+    .macros-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+
+    .macro-box {
+        min-height: 100px;
+        padding: var(--space-md);
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+    }
+
+    .macro-box-icon {
+        font-size: 28px;
+        margin-bottom: 0;
+    }
+
+    .macro-box-percent {
+        font-size: 24px;
+    }
+
+    .meal-right {
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        margin-left: 0;
+        margin-top: var(--space-sm);
+    }
+
+    .meal-item-compact {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--space-lg);
+    }
+
+    .btn-delete-compact {
+        margin-left: 0;
+        margin-top: var(--space-sm);
+        width: 100%;
+    }
+
+    .tabs {
+        margin-bottom: var(--space-lg);
+    }
+
+    .tab-btn {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .modal-content {
+        max-height: 95vh;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+
+    .user-data-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-container {
+        padding: var(--space-2xl) var(--space-lg);
+    }
+
+    .auth-header h1 {
+        font-size: 40px;
+    }
+
+    .auth-form h2 {
+        font-size: 24px;
+    }
+
+    /* iOS Safari bottom bar fix */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        body {
+            padding-bottom: calc(60px + env(safe-area-inset-bottom));
+        }
+
+        .modal-content {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
     }
 }
+
+/* ==================== ACCESSIBILITY ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus styles for keyboard navigation */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--ios-blue);
+    outline-offset: 2px;
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+
+.text-center {
+    text-align: center;
+}
+
+.text-primary {
+    color: var(--text-primary);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-tertiary {
+    color: var(--text-tertiary);
+}
+
+.mt-sm { margin-top: var(--space-sm); }
+.mt-md { margin-top: var(--space-md); }
+.mt-lg { margin-top: var(--space-lg); }
+.mt-xl { margin-top: var(--space-xl); }
+
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mb-xl { margin-bottom: var(--space-xl); }
