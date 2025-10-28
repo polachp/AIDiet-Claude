@@ -1,36 +1,51 @@
-// Globální proměnné
-let meals = [];
-let apiKey = '';
-let currentUser = null;
-let recognition = null;
-let userData = null;
-let dailyGoals = null;
-let isProcessing = false; // Prevent multiple submissions
-let unsubscribeMealsListener = null; // Real-time listener for meals
+// =====================================
+// AI DIET - MAIN APPLICATION
+// =====================================
 
-// Inicializace aplikace po přihlášení uživatele
+// =====================================
+// GLOBAL STATE
+// =====================================
+const AppState = {
+    meals: [],
+    apiKey: '',
+    currentUser: null,
+    userData: null,
+    dailyGoals: null,
+    isProcessing: false,
+    unsubscribeMealsListener: null,
+    mediaRecorder: null,
+    audioChunks: [],
+    audioBlob: null
+};
+
+// =====================================
+// APP INITIALIZATION
+// =====================================
+
+/**
+ * Initialize application after user login
+ * @param {Object} user - Firebase user object
+ */
 async function initializeApp(user) {
     console.log('🚀 Initializing app for user:', user.email);
-    currentUser = user;
+    AppState.currentUser = user;
 
     try {
-        // 1. Načíst API key z Firestore
+        // Load data
         await loadApiKeyFromFirestore();
-
-        // 2. Načíst user profile z Firestore
         await loadUserDataFromFirestore();
 
-        // 3. Setup real-time listener pro meals
+        // Setup listeners
         setupMealsListener();
+        setupEventListeners();
+        setupVoiceRecognition();
 
-        // 4. UI setup
+        // Update UI
         updateCurrentDate();
         updateSummary();
-        setupVoiceRecognition();
-        setupAutoSubmitListeners();
 
-        // 5. Zobrazit nastavení pokud nemá user profile
-        if (!userData) {
+        // Show settings for new users
+        if (!AppState.userData) {
             setTimeout(() => {
                 const settingsModal = document.getElementById('settingsModal');
                 settingsModal.classList.add('active');
@@ -45,23 +60,28 @@ async function initializeApp(user) {
     }
 }
 
-// Vyčištění dat při odhlášení
+/**
+ * Clear app data on logout
+ */
 function clearAppData() {
     console.log('🧹 Clearing app data');
 
-    // Unsubscribe from meals listener
-    if (unsubscribeMealsListener) {
-        unsubscribeMealsListener();
-        unsubscribeMealsListener = null;
+    // Unsubscribe from listeners
+    if (AppState.unsubscribeMealsListener) {
+        AppState.unsubscribeMealsListener();
+        AppState.unsubscribeMealsListener = null;
     }
 
-    // Clear all data
-    meals = [];
-    apiKey = '';
-    currentUser = null;
-    userData = null;
-    dailyGoals = null;
-    isProcessing = false;
+    // Clear state
+    Object.assign(AppState, {
+        meals: [],
+        apiKey: '',
+        currentUser: null,
+        userData: null,
+        dailyGoals: null,
+        isProcessing: false,
+        audioBlob: null
+    });
 
     // Reset UI
     const mealsList = document.getElementById('mealsList');
@@ -70,13 +90,76 @@ function clearAppData() {
     }
 }
 
-// === API KEY MANAGEMENT (from Firestore) ===
+// =====================================
+// EVENT LISTENERS SETUP
+// =====================================
+
+/**
+ * Setup all event listeners
+ */
+function setupEventListeners() {
+    // Text input - Enter key
+    const textInput = document.getElementById('textInput');
+    if (textInput) {
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !AppState.isProcessing) {
+                e.preventDefault();
+                analyzeText();
+            }
+        });
+    }
+
+    // Photo input - Auto-analyze on selection
+    const photoInput = document.getElementById('photoInput');
+    if (photoInput) {
+        photoInput.addEventListener('change', () => {
+            if (photoInput.files.length > 0 && !AppState.isProcessing) {
+                analyzePhoto();
+            }
+        });
+    }
+
+    // Drag and drop for photos
+    const photoTab = document.getElementById('photoTab');
+    if (photoTab) {
+        photoTab.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            photoTab.style.backgroundColor = 'var(--bg-secondary)';
+        });
+
+        photoTab.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            photoTab.style.backgroundColor = '';
+        });
+
+        photoTab.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            photoTab.style.backgroundColor = '';
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/') && !AppState.isProcessing) {
+                photoInput.files = files;
+                analyzePhoto();
+            }
+        });
+    }
+}
+
+// =====================================
+// API KEY MANAGEMENT
+// =====================================
+
+/**
+ * Load API key from Firestore
+ */
 async function loadApiKeyFromFirestore() {
     try {
-        apiKey = await getApiKeyFromFirestore();
+        AppState.apiKey = await getApiKeyFromFirestore();
         console.log('✅ API key loaded from Firestore');
 
-        // Update UI to show API key is loaded
         const apiKeySection = document.getElementById('apiKeySection');
         if (apiKeySection) {
             apiKeySection.innerHTML = `
@@ -89,7 +172,6 @@ async function loadApiKeyFromFirestore() {
     } catch (error) {
         console.error('❌ Failed to load API key:', error);
 
-        // Update UI to show error
         const apiKeySection = document.getElementById('apiKeySection');
         if (apiKeySection) {
             apiKeySection.innerHTML = `
@@ -104,18 +186,13 @@ async function loadApiKeyFromFirestore() {
     }
 }
 
-// Funkce pro zobrazení/skrytí nastavení
-function toggleSettings() {
-    const settingsModal = document.getElementById('settingsModal');
+// =====================================
+// USER DATA MANAGEMENT
+// =====================================
 
-    if (settingsModal.classList.contains('active')) {
-        settingsModal.classList.remove('active');
-    } else {
-        settingsModal.classList.add('active');
-    }
-}
-
-// === USER DATA MANAGEMENT (from Firestore) ===
+/**
+ * Save user profile data to Firestore
+ */
 async function saveUserData() {
     const age = parseInt(document.getElementById('userAge').value);
     const gender = document.getElementById('userGender').value;
@@ -128,28 +205,24 @@ async function saveUserData() {
         return;
     }
 
-    if (!currentUser) {
+    if (!AppState.currentUser) {
         alert('Nejste přihlášen. Přihlaste se prosím.');
         return;
     }
 
     try {
         const profileData = { age, gender, weight, height, activity };
+        const calculatedGoals = await saveUserProfile(AppState.currentUser.uid, profileData);
 
-        // Save to Firestore
-        const calculatedGoals = await saveUserProfile(currentUser.uid, profileData);
-
-        // Update local state
-        userData = profileData;
-        dailyGoals = calculatedGoals;
+        AppState.userData = profileData;
+        AppState.dailyGoals = calculatedGoals;
 
         alert('Osobní údaje byly uloženy!\n\nVaše doporučené denní hodnoty:\n' +
-              `Kalorie: ${dailyGoals.calories} kcal\n` +
-              `Bílkoviny: ${dailyGoals.protein}g\n` +
-              `Sacharidy: ${dailyGoals.carbs}g\n` +
-              `Tuky: ${dailyGoals.fat}g`);
+              `Kalorie: ${AppState.dailyGoals.calories} kcal\n` +
+              `Bílkoviny: ${AppState.dailyGoals.protein}g\n` +
+              `Sacharidy: ${AppState.dailyGoals.carbs}g\n` +
+              `Tuky: ${AppState.dailyGoals.fat}g`);
 
-        // Obnovit zobrazení
         updateSummary();
     } catch (error) {
         console.error('Error saving user data:', error);
@@ -157,17 +230,20 @@ async function saveUserData() {
     }
 }
 
+/**
+ * Load user profile from Firestore
+ */
 async function loadUserDataFromFirestore() {
-    if (!currentUser) {
+    if (!AppState.currentUser) {
         console.warn('No current user, skipping user data load');
         return;
     }
 
     try {
-        const profile = await getUserProfile(currentUser.uid);
+        const profile = await getUserProfile(AppState.currentUser.uid);
 
         if (profile) {
-            userData = {
+            AppState.userData = {
                 age: profile.age,
                 gender: profile.gender,
                 weight: profile.weight,
@@ -175,20 +251,20 @@ async function loadUserDataFromFirestore() {
                 activity: profile.activity
             };
 
-            dailyGoals = profile.dailyGoals;
+            AppState.dailyGoals = profile.dailyGoals;
 
-            // Načíst do formuláře
-            document.getElementById('userAge').value = userData.age;
-            document.getElementById('userGender').value = userData.gender;
-            document.getElementById('userWeight').value = userData.weight;
-            document.getElementById('userHeight').value = userData.height;
-            document.getElementById('userActivity').value = userData.activity;
+            // Load into form
+            document.getElementById('userAge').value = AppState.userData.age;
+            document.getElementById('userGender').value = AppState.userData.gender;
+            document.getElementById('userWeight').value = AppState.userData.weight;
+            document.getElementById('userHeight').value = AppState.userData.height;
+            document.getElementById('userActivity').value = AppState.userData.activity;
 
             console.log('✅ User data loaded from Firestore');
         } else {
             console.log('ℹ️ No user profile found (new user)');
-            userData = null;
-            dailyGoals = null;
+            AppState.userData = null;
+            AppState.dailyGoals = null;
         }
     } catch (error) {
         console.error('❌ Failed to load user data:', error);
@@ -196,120 +272,141 @@ async function loadUserDataFromFirestore() {
     }
 }
 
-// Výpočet BMR pomocí Mifflin-St Jeor rovnice
-function calculateBMR() {
-    if (!userData) return 2000; // Výchozí hodnota
+// =====================================
+// MEALS MANAGEMENT
+// =====================================
 
-    const { age, gender, weight, height } = userData;
-
-    // Mifflin-St Jeor rovnice
-    let bmr;
-    if (gender === 'male') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
-
-    return Math.round(bmr);
-}
-
-// Výpočet TDEE (Total Daily Energy Expenditure)
-function calculateTDEE() {
-    if (!userData) return 2000;
-
-    const bmr = calculateBMR();
-    const tdee = bmr * userData.activity;
-
-    return Math.round(tdee);
-}
-
-// Výpočet doporučených makroživin
-function calculateDailyGoals() {
-    const calories = Math.round(calculateTDEE());
-
-    // Doporučené rozdělení makroživin:
-    // Protein: 25-30% (použijeme 30%)
-    // Carbs: 40-50% (použijeme 40%)
-    // Fat: 25-30% (použijeme 30%)
-
-    const proteinCalories = calories * 0.30;
-    const carbsCalories = calories * 0.40;
-    const fatCalories = calories * 0.30;
-
-    // Převod na gramy (protein: 4 kcal/g, carbs: 4 kcal/g, fat: 9 kcal/g)
-    dailyGoals = {
-        calories: Math.round(calories),
-        protein: Math.round(proteinCalories / 4),
-        carbs: Math.round(carbsCalories / 4),
-        fat: Math.round(fatCalories / 9)
-    };
-
-    console.log('Daily goals calculated:', dailyGoals);
-}
-
-// === MEALS MANAGEMENT (from Firestore with real-time listener) ===
+/**
+ * Setup real-time listener for meals
+ */
 function setupMealsListener() {
-    if (!currentUser) {
+    if (!AppState.currentUser) {
         console.warn('No current user, skipping meals listener setup');
         return;
     }
 
-    // Unsubscribe from previous listener if exists
-    if (unsubscribeMealsListener) {
-        unsubscribeMealsListener();
+    if (AppState.unsubscribeMealsListener) {
+        AppState.unsubscribeMealsListener();
     }
 
-    // Setup real-time listener for today's meals
-    unsubscribeMealsListener = listenToTodayMeals(currentUser.uid, (updatedMeals) => {
-        console.log('📥 Meals updated from Firestore:', updatedMeals.length);
-        meals = updatedMeals;
-        updateSummary();
-        displayMeals();
-    });
+    AppState.unsubscribeMealsListener = listenToTodayMeals(
+        AppState.currentUser.uid,
+        (updatedMeals) => {
+            console.log('📥 Meals updated from Firestore:', updatedMeals.length);
+            AppState.meals = updatedMeals;
+            updateSummary();
+            displayMeals();
+        }
+    );
 
     console.log('✅ Meals real-time listener setup complete');
 }
 
-// === TAB SWITCHING ===
-function switchTab(tabName, event) {
-    // Deaktivovat všechny taby
-    const tabs = document.querySelectorAll('.tab-btn');
-    const contents = document.querySelectorAll('.tab-content');
-
-    tabs.forEach(tab => tab.classList.remove('active'));
-    contents.forEach(content => content.classList.remove('active'));
-
-    // Aktivovat vybraný tab
-    if (event && event.target) {
-        event.target.classList.add('active');
-    } else {
-        // Pokud event není poskytnut, najít tab tlačítko podle názvu
-        const targetBtn = document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
-        if (targetBtn) {
-            targetBtn.classList.add('active');
-        }
+/**
+ * Add meal to Firestore
+ */
+async function addMeal(nutritionData) {
+    if (!AppState.currentUser) {
+        alert('Nejste přihlášen. Přihlaste se prosím.');
+        return;
     }
-    document.getElementById(`${tabName}Tab`).classList.add('active');
+
+    try {
+        const canMakeCall = await checkRateLimit(AppState.currentUser.uid);
+        if (!canMakeCall) {
+            const remaining = await getRemainingApiCalls(AppState.currentUser.uid);
+            alert(`❌ Dosáhli jste denního limitu API volání.\n\nZbývající volání dnes: ${remaining}`);
+            return;
+        }
+
+        await addMealToFirestore(AppState.currentUser.uid, nutritionData);
+        console.log('✅ Meal added successfully');
+    } catch (error) {
+        console.error('Error adding meal:', error);
+        alert('Chyba při ukládání jídla. Zkuste to prosím znovu.');
+    }
 }
 
-// === GEMINI API ===
+/**
+ * Delete meal from Firestore
+ */
+async function deleteMeal(id) {
+    if (!confirm('Opravdu chcete smazat toto jídlo?')) {
+        return;
+    }
+
+    if (!AppState.currentUser) {
+        alert('Nejste přihlášen. Přihlaste se prosím.');
+        return;
+    }
+
+    try {
+        await deleteMealFromFirestore(AppState.currentUser.uid, id);
+        console.log('✅ Meal deleted successfully');
+    } catch (error) {
+        console.error('Error deleting meal:', error);
+        alert('Chyba při mazání jídla. Zkuste to prosím znovu.');
+    }
+}
+
+/**
+ * Display meals in UI
+ */
+function displayMeals() {
+    const mealsList = document.getElementById('mealsList');
+
+    if (AppState.meals.length === 0) {
+        mealsList.innerHTML = '<p class="empty-state">Zatím žádná jídla. Přidejte své první jídlo!</p>';
+        return;
+    }
+
+    mealsList.innerHTML = AppState.meals.map(meal => {
+        const caloriePercent = AppState.dailyGoals ?
+            Math.round((meal.calories / AppState.dailyGoals.calories) * 100) : 0;
+
+        const mealName = meal.name.charAt(0).toUpperCase() + meal.name.slice(1);
+
+        return `
+        <div class="meal-item-compact">
+            <div class="meal-left">
+                <div class="meal-name-compact">${mealName}</div>
+                <div class="meal-meta">
+                    <span class="meal-percent-badge">${caloriePercent}%</span>
+                    <span class="meal-calories">${meal.calories} kcal</span>
+                </div>
+            </div>
+            <div class="meal-right">
+                <span class="meal-macro-item">🥩 ${meal.protein}g</span>
+                <span class="meal-macro-item">🌾 ${meal.carbs}g</span>
+                <span class="meal-macro-item">🥑 ${meal.fat}g</span>
+            </div>
+            <button class="btn-delete-compact" onclick="deleteMeal(${meal.id})" title="Smazat">🗑️</button>
+        </div>
+    `;
+    }).join('');
+}
+
+// =====================================
+// GEMINI API INTEGRATION
+// =====================================
+
+/**
+ * Call Gemini API with text or image
+ */
 async function callGeminiAPI(prompt, imageBase64 = null) {
-    if (!apiKey) {
-        alert('Prosím nastavte Gemini API klíč v sekci Nastavení');
+    if (!AppState.apiKey) {
+        alert('API klíč není dostupný. Kontaktujte administrátora.');
         return null;
     }
 
     const modelsToTry = [
-    // Doporučeno pro většinu úloh a Free Tier (zdarma):
-    'gemini-2.5-flash',       // Všestranný, rychlý, cenově efektivní.
-    'gemini-2.5-flash-lite',  // Nejrychlejší a nejúspornější model, skvělý pro vysokou propustnost.
-
-];
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite'
+    ];
 
     let requestBody;
 
     if (imageBase64) {
-        // Request s obrázkem
         requestBody = {
             contents: [{
                 parts: [
@@ -324,7 +421,6 @@ async function callGeminiAPI(prompt, imageBase64 = null) {
             }]
         };
     } else {
-        // Request jen s textem
         requestBody = {
             contents: [{
                 parts: [{ text: prompt }]
@@ -332,7 +428,6 @@ async function callGeminiAPI(prompt, imageBase64 = null) {
         };
     }
 
-    // Zkusit různé modely s různými API verzemi
     const apiVersions = ['v1beta', 'v1'];
     let lastError = null;
 
@@ -340,7 +435,7 @@ async function callGeminiAPI(prompt, imageBase64 = null) {
         for (const apiVersion of apiVersions) {
             try {
                 console.log(`Trying ${apiVersion} model: ${modelName}`);
-                const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${AppState.apiKey}`;
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -354,7 +449,7 @@ async function callGeminiAPI(prompt, imageBase64 = null) {
                     const errorData = await response.json();
                     lastError = errorData.error?.message || 'Neznámá chyba';
                     console.warn(`${apiVersion}/models/${modelName} failed:`, lastError);
-                    continue; // Zkusit další verzi API nebo model
+                    continue;
                 }
 
                 const data = await response.json();
@@ -365,29 +460,27 @@ async function callGeminiAPI(prompt, imageBase64 = null) {
             } catch (error) {
                 lastError = error.message;
                 console.warn(`${apiVersion}/models/${modelName} error:`, error.message);
-                // Pokračovat na další kombinaci
             }
         }
     }
 
-    // Pokud jsme vyčerpali všechny možnosti
     console.error('All models failed. Last error:', lastError);
-    alert(`Chyba při volání API: ${lastError}\n\nŽádný z modelů nefunguje. Zkuste:\n1. Ověřit API klíč na https://aistudio.google.com/app/apikey\n2. Povolit Gemini API v Google Cloud Console\n3. Vygenerovat nový API klíč`);
+    alert(`Chyba při volání API: ${lastError}\n\nKontaktujte administrátora.`);
     return null;
 }
 
-// Funkce pro volání Gemini API s audio vstupem
+/**
+ * Call Gemini API with audio
+ */
 async function callGeminiAPIWithAudio(prompt, audioBase64) {
-    if (!apiKey) {
-        alert('Prosím nastavte Gemini API klíč v sekci Nastavení');
+    if (!AppState.apiKey) {
+        alert('API klíč není dostupný. Kontaktujte administrátora.');
         return null;
     }
 
     const modelsToTry = [
         'gemini-2.5-flash',
-        'gemini-2.5-flash-lite',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'gemini-2.5-flash-lite'
     ];
 
     const requestBody = {
@@ -404,7 +497,6 @@ async function callGeminiAPIWithAudio(prompt, audioBase64) {
         }]
     };
 
-    // Zkusit různé modely s různými API verzemi
     const apiVersions = ['v1beta', 'v1'];
     let lastError = null;
 
@@ -412,7 +504,7 @@ async function callGeminiAPIWithAudio(prompt, audioBase64) {
         for (const apiVersion of apiVersions) {
             try {
                 console.log(`Trying ${apiVersion} model: ${modelName} with audio`);
-                const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${AppState.apiKey}`;
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -441,23 +533,23 @@ async function callGeminiAPIWithAudio(prompt, audioBase64) {
         }
     }
 
-    // Pokud všechny modely selhaly
     console.error('All audio models failed. Last error:', lastError);
-    alert(`Chyba při zpracování audio: ${lastError}\n\nZkuste:\n1. Zkontrolovat API klíč\n2. Audio může být příliš dlouhé\n3. Zkusit znovu nahrát`);
+    alert(`Chyba při zpracování audio: ${lastError}`);
     return null;
 }
 
+/**
+ * Parse nutrition data from AI response
+ */
 function parseNutritionData(aiResponse) {
     try {
         console.log('Parsing AI response:', aiResponse);
 
-        // Pokusí se najít JSON v odpovědi
         const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             console.log('Found JSON in response:', jsonMatch[0]);
             const parsed = JSON.parse(jsonMatch[0]);
 
-            // Validace dat
             if (!parsed.name || typeof parsed.calories !== 'number' ||
                 typeof parsed.protein !== 'number' ||
                 typeof parsed.carbs !== 'number' ||
@@ -466,7 +558,6 @@ function parseNutritionData(aiResponse) {
                 return null;
             }
 
-            // Zaokrouhlit všechna čísla na celá čísla
             const result = {
                 name: parsed.name,
                 calories: Math.round(parsed.calories),
@@ -475,13 +566,11 @@ function parseNutritionData(aiResponse) {
                 fat: Math.round(parsed.fat)
             };
 
-            // Validace rozumných hodnot - jídlo musí mít alespoň nějaké kalorie
             if (result.calories < 5) {
                 console.warn('Calories too low, likely not food:', result);
                 return null;
             }
 
-            // Kontrola, že aspoň jedna makroživina je nenulová
             if (result.protein === 0 && result.carbs === 0 && result.fat === 0) {
                 console.warn('All macros are zero, likely not food:', result);
                 return null;
@@ -491,7 +580,6 @@ function parseNutritionData(aiResponse) {
         }
 
         console.log('No JSON found, trying text parsing');
-        // Fallback - pokusí se parsovat textovou odpověď
         const lines = aiResponse.toLowerCase();
         const result = {
             name: "Analyzované jídlo",
@@ -503,7 +591,6 @@ function parseNutritionData(aiResponse) {
 
         console.log('Parsed from text:', result);
 
-        // Validace rozumných hodnot
         if (result.calories < 5) {
             console.warn('Calories too low, likely not food:', result);
             return null;
@@ -517,56 +604,15 @@ function parseNutritionData(aiResponse) {
     }
 }
 
-// === AUTO-SUBMIT LISTENERS ===
-function setupAutoSubmitListeners() {
-    // TEXT INPUT - Enter key listener
-    const textInput = document.getElementById('textInput');
-    textInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !isProcessing) {
-            e.preventDefault();
-            analyzeText();
-        }
-    });
+// =====================================
+// TEXT INPUT ANALYSIS
+// =====================================
 
-    // PHOTO INPUT - Auto-analyze on file selection
-    const photoInput = document.getElementById('photoInput');
-    photoInput.addEventListener('change', () => {
-        if (photoInput.files.length > 0 && !isProcessing) {
-            analyzePhoto();
-        }
-    });
-
-    // Add drag and drop support for photos
-    const photoTab = document.getElementById('photoTab');
-
-    photoTab.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        photoTab.style.backgroundColor = 'var(--bg-secondary)';
-    });
-
-    photoTab.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        photoTab.style.backgroundColor = '';
-    });
-
-    photoTab.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        photoTab.style.backgroundColor = '';
-
-        const files = e.dataTransfer.files;
-        if (files.length > 0 && files[0].type.startsWith('image/') && !isProcessing) {
-            photoInput.files = files;
-            analyzePhoto();
-        }
-    });
-}
-
-// === TEXT INPUT ===
+/**
+ * Analyze text input
+ */
 async function analyzeText() {
-    if (isProcessing) return; // Prevent multiple submissions
+    if (AppState.isProcessing) return;
 
     const textInput = document.getElementById('textInput');
     const text = textInput.value.trim();
@@ -576,7 +622,7 @@ async function analyzeText() {
         return;
     }
 
-    isProcessing = true;
+    AppState.isProcessing = true;
     showLoading(true);
 
     const prompt = `Analyzuj následující jídlo a vrať přesné nutriční hodnoty ve formátu JSON:
@@ -605,11 +651,11 @@ Vrať POUZE validní JSON, bez dalšího textu.`;
     try {
         const response = await callGeminiAPI(prompt);
         showLoading(false);
-        isProcessing = false;
+        AppState.isProcessing = false;
 
         if (!response) {
             console.error('No response from API');
-            alert('Nepodařilo se získat odpověď z API. Zkontrolujte API klíč a zkuste to znovu.');
+            alert('Nepodařilo se získat odpověď z API.');
             return;
         }
 
@@ -618,25 +664,31 @@ Vrať POUZE validní JSON, bez dalšího textu.`;
 
         if (!nutritionData) {
             console.error('Failed to parse nutrition data');
-            alert('❌ Nerozpoznané jídlo\n\nText nebyl rozpoznán jako jídlo nebo nemá dostatečné nutriční hodnoty.\n\nZkuste:\n• Popsat jídlo konkrétněji\n• Uvést množství (např. "100g kuřecího masa")\n• Zadat jiné jídlo');
+            alert('❌ Nerozpoznané jídlo\n\nZkuste popsat jídlo konkrétněji.');
             return;
         }
 
         console.log('Adding meal:', nutritionData);
         addMeal(nutritionData);
         textInput.value = '';
-        
+
     } catch (error) {
         console.error('Error in analyzeText:', error);
         alert('Došlo k chybě při analýze: ' + error.message);
         showLoading(false);
-        isProcessing = false;
+        AppState.isProcessing = false;
     }
 }
 
-// === PHOTO INPUT ===
+// =====================================
+// PHOTO INPUT ANALYSIS
+// =====================================
+
+/**
+ * Analyze photo input
+ */
 async function analyzePhoto() {
-    if (isProcessing) return; // Prevent multiple submissions
+    if (AppState.isProcessing) return;
 
     const photoInput = document.getElementById('photoInput');
     const file = photoInput.files[0];
@@ -646,28 +698,23 @@ async function analyzePhoto() {
         return;
     }
 
-    isProcessing = true;
+    AppState.isProcessing = true;
     showInlineLoading('photoLoading', true);
 
-    // Převod obrázku na base64
-    const base64 = await fileToBase64(file);
-    const base64Data = base64.split(',')[1]; // Odstranit data:image/jpeg;base64,
+    try {
+        const base64 = await fileToBase64(file);
+        const base64Data = base64.split(',')[1];
 
-    // Zobrazit náhled
-    const preview = document.getElementById('photoPreview');
-    preview.innerHTML = `<img src="${base64}" alt="Preview">`;
+        const preview = document.getElementById('photoPreview');
+        preview.innerHTML = `<img src="${base64}" alt="Preview">`;
 
-    const prompt = `Analyzuj jídlo na této fotografii a vrať nutriční hodnoty ve formátu JSON.
+        const prompt = `Analyzuj jídlo na této fotografii a vrať nutriční hodnoty ve formátu JSON.
 
 DŮLEŽITÉ - Odhad velikosti porce:
-1. Porovnej jídlo s viditelným nádobím (talíř ~25cm, miska ~15cm, hrnek ~8cm průměr)
-2. Využij viditelné příbory (lžíce ~15cm, vidlička ~18cm, nůž ~20cm)
-3. Porovnej s běžnými předměty v okolí (telefon, ruka, stůl)
-4. Použij standardní velikosti porcí (např. kuřecí prsa ~150g, hamburger ~120g, porce rýže ~200g vařené)
-5. Odhadni objem jídla podle toho, kolik místa zabírá na talíři/v misce
-6. Zohledni vrstvení a hloubku jídla, ne jen plochu
-
-Pokud je velikost nejasná, preferuj konzervativní odhad běžné porce.
+1. Porovnej jídlo s viditelným nádobím (talíř ~25cm, miska ~15cm)
+2. Využij viditelné příbory (lžíce ~15cm, vidlička ~18cm)
+3. Použij standardní velikosti porcí (např. kuřecí prsa ~150g)
+4. Odhadni objem jídla podle toho, kolik místa zabírá na talíři
 
 Vrať ve formátu JSON:
 {
@@ -680,22 +727,31 @@ Vrať ve formátu JSON:
 
 Vrať POUZE validní JSON, bez dalšího textu. Pokud je na fotce více jídel, sečti je.`;
 
-    const response = await callGeminiAPI(prompt, base64Data);
-    showInlineLoading('photoLoading', false);
-    isProcessing = false;
+        const response = await callGeminiAPI(prompt, base64Data);
+        showInlineLoading('photoLoading', false);
+        AppState.isProcessing = false;
 
-    if (response) {
-        const nutritionData = parseNutritionData(response);
-        if (nutritionData) {
-            addMeal(nutritionData);
-            photoInput.value = '';
-            preview.innerHTML = '';
-        } else {
-            alert('❌ Nerozpoznané jídlo na fotografii\n\nNa fotce nebylo rozpoznáno jídlo s dostatečnými nutričními hodnotami.\n\nZkuste:\n• Vyfotit jídlo zblízka a ostře\n• Zajistit dobré osvětlení\n• Vyfotit jednodušší jídlo\n• Použít textový vstup místo fotky');
+        if (response) {
+            const nutritionData = parseNutritionData(response);
+            if (nutritionData) {
+                addMeal(nutritionData);
+                photoInput.value = '';
+                preview.innerHTML = '';
+            } else {
+                alert('❌ Nerozpoznané jídlo na fotografii\n\nZkuste vyfotit jídlo zblízka a ostře.');
+            }
         }
+    } catch (error) {
+        console.error('Error in analyzePhoto:', error);
+        alert('Chyba při analýze fotografie: ' + error.message);
+        showInlineLoading('photoLoading', false);
+        AppState.isProcessing = false;
     }
 }
 
+/**
+ * Convert file to base64
+ */
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -705,68 +761,67 @@ function fileToBase64(file) {
     });
 }
 
-// === VOICE INPUT ===
-let mediaRecorder = null;
-let audioChunks = [];
-let audioBlob = null;
+// =====================================
+// VOICE INPUT ANALYSIS
+// =====================================
 
+/**
+ * Setup voice recognition
+ */
 function setupVoiceRecognition() {
-    // Zkontrolovat podporu MediaRecorder
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.warn('MediaRecorder not supported');
-        document.getElementById('voiceBtn').disabled = true;
-        document.getElementById('voiceBtn').textContent = '❌ Nepodporováno';
+        const voiceBtn = document.getElementById('voiceBtn');
+        if (voiceBtn) {
+            voiceBtn.disabled = true;
+            voiceBtn.textContent = '❌ Nepodporováno';
+        }
     }
 }
 
+/**
+ * Start voice recognition
+ */
 async function startVoiceRecognition() {
     const voiceBtn = document.getElementById('voiceBtn');
 
-    // Pokud už nahrává, zastavit
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
+    if (AppState.mediaRecorder && AppState.mediaRecorder.state === 'recording') {
+        AppState.mediaRecorder.stop();
         return;
     }
 
     try {
-        // Požádat o přístup k mikrofonu
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-        // Vytvořit MediaRecorder
-        audioChunks = [];
-        mediaRecorder = new MediaRecorder(stream);
+        AppState.audioChunks = [];
+        AppState.mediaRecorder = new MediaRecorder(stream);
 
-        mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
+        AppState.mediaRecorder.ondataavailable = (event) => {
+            AppState.audioChunks.push(event.data);
         };
 
-        mediaRecorder.onstop = async () => {
-            // Vytvořit blob z nahraných dat
-            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        AppState.mediaRecorder.onstop = async () => {
+            AppState.audioBlob = new Blob(AppState.audioChunks, { type: 'audio/webm' });
 
-            // Zastavit stream
             stream.getTracks().forEach(track => track.stop());
 
-            // Zobrazit info o nahrávce
-            const sizeKB = (audioBlob.size / 1024).toFixed(2);
+            const sizeKB = (AppState.audioBlob.size / 1024).toFixed(2);
             console.log(`Nahrávka dokončena (${sizeKB} KB). Automaticky zpracovávám...`);
 
             voiceBtn.textContent = '🎤 Nahrát znovu';
             voiceBtn.style.background = '';
 
-            // Auto-analyze the voice recording
             analyzeVoice();
         };
 
-        mediaRecorder.onerror = (event) => {
+        AppState.mediaRecorder.onerror = (event) => {
             console.error('MediaRecorder error:', event.error);
             alert('Chyba při nahrávání: ' + event.error);
             voiceBtn.textContent = '🎤 Začít nahrávat';
             voiceBtn.style.background = '';
         };
 
-        // Začít nahrávat
-        mediaRecorder.start();
+        AppState.mediaRecorder.start();
         voiceBtn.textContent = '⏹️ Zastavit nahrávání';
         voiceBtn.style.background = '#f44336';
 
@@ -775,9 +830,9 @@ async function startVoiceRecognition() {
         let errorMsg = 'Nelze získat přístup k mikrofonu.\n\n';
 
         if (error.name === 'NotAllowedError') {
-            errorMsg += 'Přístup k mikrofonu byl zamítnut. Povolte přístup v nastavení prohlížeče.';
+            errorMsg += 'Přístup k mikrofonu byl zamítnut.';
         } else if (error.name === 'NotFoundError') {
-            errorMsg += 'Mikrofon nebyl nalezen. Zkontrolujte připojení mikrofonu.';
+            errorMsg += 'Mikrofon nebyl nalezen.';
         } else {
             errorMsg += 'Chyba: ' + error.message;
         }
@@ -786,21 +841,23 @@ async function startVoiceRecognition() {
     }
 }
 
+/**
+ * Analyze voice input
+ */
 async function analyzeVoice() {
-    if (isProcessing) return; // Prevent multiple submissions
+    if (AppState.isProcessing) return;
 
-    if (!audioBlob) {
+    if (!AppState.audioBlob) {
         alert('Nejprve nahrajte hlasový vstup');
         return;
     }
 
-    isProcessing = true;
+    AppState.isProcessing = true;
     showInlineLoading('voiceLoading', true);
 
     try {
-        // Převést audio na base64
-        const audioBase64 = await blobToBase64(audioBlob);
-        const audioBase64Data = audioBase64.split(',')[1]; // Odstranit data:audio/webm;base64,
+        const audioBase64 = await blobToBase64(AppState.audioBlob);
+        const audioBase64Data = audioBase64.split(',')[1];
 
         const prompt = `Poslouchej tento audio záznam a:
 1. Přepiš co říkám
@@ -816,42 +873,39 @@ async function analyzeVoice() {
 }
 
 DŮLEŽITÉ - Odhad velikosti z mluveného slova:
-- Pozorně poslouchej zmínky o množství (gramy, kusy, porce, talíř, miska)
+- Pozorně poslouchej zmínky o množství (gramy, kusy, porce)
 - Pokud je řečeno množství, použij ho přesně
-- Pokud není uvedeno množství, předpokládaj standardní porci:
-  * Maso/ryba: ~150g
-  * Příloha (rýže, brambory, těstoviny): ~200g vařené
-  * Zelenina: ~150g
-  * "Velká porce" = +50%, "Malá porce" = -30%
-  * "Celý talíř" = běžná porce, "Půl talíře" = poloviční porce
+- Pokud není uvedeno, předpokládaj standardní porci
 
 Vrať POUZE validní JSON, bez dalšího textu.`;
 
-        // Zavolat Gemini API s audio
         const response = await callGeminiAPIWithAudio(prompt, audioBase64Data);
         showInlineLoading('voiceLoading', false);
-        isProcessing = false;
+        AppState.isProcessing = false;
 
         if (response) {
             const nutritionData = parseNutritionData(response);
             if (nutritionData) {
                 addMeal(nutritionData);
-                audioBlob = null;
+                AppState.audioBlob = null;
                 document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
             } else {
-                alert('❌ Nerozpoznané jídlo v hlasovém záznamu\n\nHlasový záznam nebyl rozpoznán jako popis jídla s dostatečnými nutričními hodnotami.\n\nZkuste:\n• Mluvit jasněji a pomaleji\n• Popsat jídlo konkrétněji s množstvím\n• Nahrát v tišším prostředí\n• Použít textový vstup místo hlasu');
-                audioBlob = null;
+                alert('❌ Nerozpoznané jídlo v hlasovém záznamu\n\nZkuste mluvit jasněji.');
+                AppState.audioBlob = null;
                 document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
             }
         }
     } catch (error) {
         showInlineLoading('voiceLoading', false);
-        isProcessing = false;
+        AppState.isProcessing = false;
         console.error('Error analyzing voice:', error);
         alert('Chyba při zpracování audio: ' + error.message);
     }
 }
 
+/**
+ * Convert blob to base64
+ */
 function blobToBase64(blob) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -861,164 +915,107 @@ function blobToBase64(blob) {
     });
 }
 
-// === ADD/DELETE MEALS (to Firestore) ===
-async function addMeal(nutritionData) {
-    if (!currentUser) {
-        alert('Nejste přihlášen. Přihlaste se prosím.');
-        return;
-    }
+// =====================================
+// UI FUNCTIONS
+// =====================================
 
-    try {
-        // Check rate limit first
-        const canMakeCall = await checkRateLimit(currentUser.uid);
-        if (!canMakeCall) {
-            const remaining = await getRemainingApiCalls(currentUser.uid);
-            alert(`❌ Dosáhli jste denního limitu API volání.\n\nZbývající volání dnes: ${remaining}\n\nLimitujeme počet volání pro ochranu API klíče.`);
-            return;
+/**
+ * Toggle settings modal
+ */
+function toggleSettings() {
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal.classList.contains('active')) {
+        settingsModal.classList.remove('active');
+    } else {
+        settingsModal.classList.add('active');
+    }
+}
+
+/**
+ * Switch between input tabs
+ */
+function switchTab(tabName, event) {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => tab.classList.remove('active'));
+    contents.forEach(content => content.classList.remove('active'));
+
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        const targetBtn = document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
+        if (targetBtn) {
+            targetBtn.classList.add('active');
         }
-
-        // Add to Firestore (also increments API call counter)
-        await addMealToFirestore(currentUser.uid, nutritionData);
-        console.log('✅ Meal added successfully');
-
-        // Real-time listener will automatically update the UI
-    } catch (error) {
-        console.error('Error adding meal:', error);
-        alert('Chyba při ukládání jídla. Zkuste to prosím znovu.');
     }
+
+    document.getElementById(`${tabName}Tab`).classList.add('active');
 }
 
-async function deleteMeal(id) {
-    if (!confirm('Opravdu chcete smazat toto jídlo?')) {
-        return;
-    }
-
-    if (!currentUser) {
-        alert('Nejste přihlášen. Přihlaste se prosím.');
-        return;
-    }
-
-    try {
-        await deleteMealFromFirestore(currentUser.uid, id);
-        console.log('✅ Meal deleted successfully');
-
-        // Real-time listener will automatically update the UI
-    } catch (error) {
-        console.error('Error deleting meal:', error);
-        alert('Chyba při mazání jídla. Zkuste to prosím znovu.');
-    }
-}
-
-function displayMeals() {
-    const mealsList = document.getElementById('mealsList');
-
-    if (meals.length === 0) {
-        mealsList.innerHTML = '<p class="empty-state">Zatím žádná jídla. Přidejte své první jídlo!</p>';
-        return;
-    }
-
-    mealsList.innerHTML = meals.map(meal => {
-        // Vypočítat procento z denního příjmu
-        const caloriePercent = dailyGoals ?
-            Math.round((meal.calories / dailyGoals.calories) * 100) : 0;
-
-        // Velké první písmeno názvu
-        const mealName = meal.name.charAt(0).toUpperCase() + meal.name.slice(1);
-
-        return `
-        <div class="meal-item-compact">
-            <div class="meal-left">
-                <div class="meal-name-compact">${mealName}</div>
-                <div class="meal-meta">
-                    <span class="meal-percent-badge">${caloriePercent}%</span>
-                    <span class="meal-calories">${meal.calories} kcal</span>
-                </div>
-            </div>
-            <div class="meal-right">
-                <span class="meal-macro-item">🥩 ${meal.protein}g</span>
-                <span class="meal-macro-item">🌾 ${meal.carbs}g</span>
-                <span class="meal-macro-item">🥑 ${meal.fat}g</span>
-            </div>
-            <button class="btn-delete-compact" onclick="deleteMeal(${meal.id})" title="Smazat">🗑️</button>
-        </div>
-    `;
-    }).join('');
-}
-
+/**
+ * Update summary display
+ */
 function updateSummary() {
-    const totals = meals.reduce((acc, meal) => ({
+    const totals = AppState.meals.reduce((acc, meal) => ({
         calories: acc.calories + (meal.calories || 0),
         protein: acc.protein + (meal.protein || 0),
         carbs: acc.carbs + (meal.carbs || 0),
         fat: acc.fat + (meal.fat || 0)
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-    // Zaokrouhlit všechny totals na celá čísla
     totals.calories = Math.round(totals.calories);
     totals.protein = Math.round(totals.protein);
     totals.carbs = Math.round(totals.carbs);
     totals.fat = Math.round(totals.fat);
 
-    // Aktualizovat celkové kalorie
     document.getElementById('totalCalories').textContent = totals.calories;
 
-    // Pokud máme denní cíle, zobrazit je
-    if (dailyGoals) {
-        const caloriesPercent = Math.round((totals.calories / dailyGoals.calories) * 100);
+    if (AppState.dailyGoals) {
+        const caloriesPercent = Math.round((totals.calories / AppState.dailyGoals.calories) * 100);
 
-        // Aktualizovat hlavní kartu s procentem
         const caloriesPercentageEl = document.getElementById('caloriesPercentage');
         caloriesPercentageEl.textContent = caloriesPercent + '%';
-        document.getElementById('caloriesGoalValue').textContent = dailyGoals.calories;
+        document.getElementById('caloriesGoalValue').textContent = AppState.dailyGoals.calories;
 
-        // Aktualizovat progress bar - zobrazit skutečná procenta i nad 100%
         const progressFill = document.getElementById('caloriesProgressFill');
-        progressFill.style.width = Math.min(caloriesPercent, 100) + '%'; // Progress bar max 100% šířky
+        progressFill.style.width = Math.min(caloriesPercent, 100) + '%';
 
-        // Plynulé barevné varování podle úrovně (bez rámečků)
+        // Color coding
         if (caloriesPercent >= 120) {
-            // 120%+ - tmavě červená (vážné překročení)
             progressFill.style.background = 'rgba(211, 47, 47, 0.95)';
             caloriesPercentageEl.style.color = '#D32F2F';
             caloriesPercentageEl.style.fontWeight = '700';
         } else if (caloriesPercent >= 110) {
-            // 110-119% - středně červená
             progressFill.style.background = 'rgba(229, 57, 53, 0.9)';
             caloriesPercentageEl.style.color = '#E53935';
             caloriesPercentageEl.style.fontWeight = '700';
         } else if (caloriesPercent >= 101) {
-            // 101-109% - světle červená (varování začíná)
             progressFill.style.background = 'rgba(239, 83, 80, 0.85)';
             caloriesPercentageEl.style.color = '#EF5350';
             caloriesPercentageEl.style.fontWeight = '700';
         } else if (caloriesPercent === 100) {
-            // PŘESNĚ 100% - zelená (ideální)
             progressFill.style.background = 'rgba(76, 175, 80, 0.9)';
             caloriesPercentageEl.style.color = '#4CAF50';
             caloriesPercentageEl.style.fontWeight = '600';
         } else if (caloriesPercent >= 90) {
-            // 90-99% - oranžová
             progressFill.style.background = 'rgba(255, 167, 38, 0.9)';
             caloriesPercentageEl.style.color = '#FF6F00';
             caloriesPercentageEl.style.fontWeight = '600';
         } else if (caloriesPercent >= 80) {
-            // 80-89% - světle oranžová
             progressFill.style.background = 'rgba(255, 183, 77, 0.85)';
             caloriesPercentageEl.style.color = '#FF8F00';
             caloriesPercentageEl.style.fontWeight = '600';
         } else {
-            // 0-79% - normální (šedá/bílá)
             progressFill.style.background = 'rgba(255, 255, 255, 0.9)';
             caloriesPercentageEl.style.color = 'var(--text-primary)';
             caloriesPercentageEl.style.fontWeight = '600';
         }
 
-        // Aktualizovat makroživiny
-        updateMacroBox('protein', totals.protein, dailyGoals.protein);
-        updateMacroBox('carbs', totals.carbs, dailyGoals.carbs);
-        updateMacroBox('fat', totals.fat, dailyGoals.fat);
+        updateMacroBox('protein', totals.protein, AppState.dailyGoals.protein);
+        updateMacroBox('carbs', totals.carbs, AppState.dailyGoals.carbs);
+        updateMacroBox('fat', totals.fat, AppState.dailyGoals.fat);
     } else {
-        // Bez cílů, zobrazit základní info
         document.getElementById('caloriesGoalValue').textContent = '?';
         document.getElementById('caloriesProgressFill').style.width = '0%';
 
@@ -1036,11 +1033,12 @@ function updateSummary() {
     }
 }
 
+/**
+ * Update macro box display
+ */
 function updateMacroBox(type, current, goal) {
-    // Zobrazit skutečná procenta i nad 100%
     const percent = Math.round((current / goal) * 100);
 
-    // Aktualizovat texty v macro boxu
     const totalElement = document.getElementById(`total${type.charAt(0).toUpperCase() + type.slice(1)}`);
     const percentElement = document.getElementById(`${type}Percent`);
     const goalElement = document.getElementById(`${type}Goal`);
@@ -1049,40 +1047,31 @@ function updateMacroBox(type, current, goal) {
     if (percentElement) percentElement.textContent = percent + '%';
     if (goalElement) goalElement.textContent = `z ${goal}g`;
 
-    // Nastavit výšku rising fill pozadí - max 100% pro vizuální výplň
     const macroBox = document.querySelector(`.macro-box[data-macro="${type}"]`);
     if (macroBox) {
         const fillHeight = Math.min(percent, 100);
         macroBox.style.setProperty('--fill-height', fillHeight + '%');
 
-        // Plynulé barevné varování podle úrovně (bez rámečků)
         if (percentElement) {
             if (percent >= 120) {
-                // 120%+ - tmavě červená (vážné překročení)
                 percentElement.style.color = '#D32F2F';
                 percentElement.style.fontWeight = '700';
             } else if (percent >= 110) {
-                // 110-119% - středně červená
                 percentElement.style.color = '#E53935';
                 percentElement.style.fontWeight = '700';
             } else if (percent >= 101) {
-                // 101-109% - světle červená (varování začíná)
                 percentElement.style.color = '#EF5350';
                 percentElement.style.fontWeight = '700';
             } else if (percent === 100) {
-                // PŘESNĚ 100% - zelená (ideální)
                 percentElement.style.color = '#4CAF50';
                 percentElement.style.fontWeight = '600';
             } else if (percent >= 90) {
-                // 90-99% - oranžová
                 percentElement.style.color = '#FF6F00';
                 percentElement.style.fontWeight = '600';
             } else if (percent >= 80) {
-                // 80-89% - světle oranžová
                 percentElement.style.color = '#FF8F00';
                 percentElement.style.fontWeight = '600';
             } else {
-                // 0-79% - normální (šedá/bílá)
                 percentElement.style.color = 'var(--text-primary)';
                 percentElement.style.fontWeight = '500';
             }
@@ -1090,7 +1079,9 @@ function updateMacroBox(type, current, goal) {
     }
 }
 
-// === UTILITY FUNCTIONS ===
+/**
+ * Update current date display
+ */
 function updateCurrentDate() {
     const currentDateEl = document.getElementById('currentDate');
     if (currentDateEl) {
@@ -1100,18 +1091,28 @@ function updateCurrentDate() {
     }
 }
 
-function formatTime(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-}
-
+/**
+ * Show/hide loading indicator
+ */
 function showLoading(show) {
-    document.getElementById('loading').style.display = show ? 'block' : 'none';
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.style.display = show ? 'block' : 'none';
+    }
 }
 
+/**
+ * Show/hide inline loading indicator
+ */
 function showInlineLoading(elementId, show) {
     const element = document.getElementById(elementId);
     if (element) {
         element.style.display = show ? 'flex' : 'none';
     }
 }
+
+// =====================================
+// INITIALIZATION
+// =====================================
+
+console.log('✅ app.js loaded successfully');
