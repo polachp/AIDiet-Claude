@@ -1241,7 +1241,13 @@ function changeDate(direction) {
         return;
     }
 
-    AppState.selectedDate = newDateString;
+    // Set to new date (or null if it's today)
+    if (newDateString === today) {
+        AppState.selectedDate = null;
+    } else {
+        AppState.selectedDate = newDateString;
+    }
+
     updateSelectedDateDisplay();
     setupMealsListener();
     updateNavigationButtons();
