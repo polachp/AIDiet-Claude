@@ -1215,3 +1215,296 @@ button:disabled {
         font-size: 1.1em;
     }
 }
+
+/* ==================== AUTHENTICATION UI ==================== */
+
+/* Auth Screen - Full Page Overlay */
+.auth-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: var(--space-md);
+}
+
+/* Auth Container */
+.auth-container {
+    background: var(--card-background);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    padding: var(--space-2xl);
+    max-width: 420px;
+    width: 100%;
+    animation: authFadeIn 0.4s ease;
+}
+
+@keyframes authFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Auth Header */
+.auth-header {
+    text-align: center;
+    margin-bottom: var(--space-2xl);
+}
+
+.auth-header h1 {
+    font-size: 2.2em;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+    font-weight: 700;
+}
+
+.auth-header p {
+    color: var(--text-secondary);
+    font-size: 1em;
+}
+
+/* Auth Form */
+.auth-form {
+    animation: formSlideIn 0.3s ease;
+}
+
+@keyframes formSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.auth-form h2 {
+    font-size: 1.5em;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+    font-weight: 600;
+}
+
+.auth-form .form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 1em;
+    transition: all var(--transition-base);
+    background: var(--card-background);
+    color: var(--text-primary);
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+}
+
+/* Full Width Button */
+.btn-full {
+    width: 100%;
+    margin-bottom: var(--space-md);
+}
+
+/* Google Sign-In Button */
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: 12px 20px;
+    background: var(--card-background);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-align: center;
+}
+
+.btn-google:hover {
+    background: var(--card-hover);
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-google:active {
+    transform: scale(0.98);
+}
+
+.btn-google svg {
+    flex-shrink: 0;
+}
+
+/* Auth Divider */
+.auth-divider {
+    position: relative;
+    text-align: center;
+    margin: var(--space-lg) 0;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.auth-divider span {
+    position: relative;
+    display: inline-block;
+    padding: 0 var(--space-md);
+    background: var(--card-background);
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+/* Auth Switch (Register/Login Toggle) */
+.auth-switch {
+    text-align: center;
+    margin-top: var(--space-lg);
+    color: var(--text-secondary);
+    font-size: 0.95em;
+}
+
+.auth-switch a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--transition-base);
+}
+
+.auth-switch a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Auth Message (Error/Success) */
+.auth-message {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    margin-top: var(--space-lg);
+    font-size: 0.95em;
+    animation: messageSlideIn 0.3s ease;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth-message.error {
+    background: rgba(231, 76, 60, 0.1);
+    color: #C0392B;
+    border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.auth-message.success {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27AE60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+/* Header Actions (Settings + Logout) */
+.header-actions {
+    position: absolute;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.settings-btn,
+.logout-btn {
+    background: var(--card-background);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.95em;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-weight: 500;
+}
+
+.settings-btn:hover,
+.logout-btn:hover {
+    background: var(--card-hover);
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-btn:active,
+.logout-btn:active {
+    transform: scale(0.95);
+}
+
+.logout-btn {
+    background: var(--danger-color);
+    color: var(--text-white);
+    border-color: var(--danger-color);
+}
+
+.logout-btn:hover {
+    background: #6C7A89;
+    border-color: #6C7A89;
+}
+
+/* Responsive Auth UI */
+@media (max-width: 768px) {
+    .auth-container {
+        padding: var(--space-lg);
+        max-width: 100%;
+    }
+
+    .auth-header h1 {
+        font-size: 1.8em;
+    }
+
+    .auth-form h2 {
+        font-size: 1.3em;
+    }
+
+    .header-actions {
+        position: static;
+        justify-content: center;
+        margin-bottom: var(--space-md);
+    }
+}

@@ -1,104 +1,106 @@
 // Globální proměnné
 let meals = [];
 let apiKey = '';
+let currentUser = null;
 let recognition = null;
 let userData = null;
 let dailyGoals = null;
 let isProcessing = false; // Prevent multiple submissions
+let unsubscribeMealsListener = null; // Real-time listener for meals
 
-// Inicializace při načtení stránky
-document.addEventListener('DOMContentLoaded', () => {
-    loadApiKey();
-    loadUserData();
-    loadMeals();
-    updateCurrentDate();
-    updateSummary();
-    displayMeals();
-    setupVoiceRecognition();
-    setupAutoSubmitListeners();
+// Inicializace aplikace po přihlášení uživatele
+async function initializeApp(user) {
+    console.log('🚀 Initializing app for user:', user.email);
+    currentUser = user;
 
-    // Pokud není API klíč nebo osobní údaje, zobrazit nastavení
-    const hasApiKey = localStorage.getItem('geminiApiKey');
-    const hasUserData = localStorage.getItem('userData');
+    try {
+        // 1. Načíst API key z Firestore
+        await loadApiKeyFromFirestore();
 
-    if (!hasApiKey || !hasUserData) {
-        // Zobrazit nastavení automaticky
-        setTimeout(() => {
-            const settingsModal = document.getElementById('settingsModal');
-            settingsModal.classList.add('active');
+        // 2. Načíst user profile z Firestore
+        await loadUserDataFromFirestore();
 
-            // Zobrazit info bublinu
-            if (!hasApiKey && !hasUserData) {
-                alert('👋 Vítejte v AI Diet!\n\nPro začátek prosím nastavte:\n1. Gemini API klíč (zdarma)\n2. Osobní údaje (pro výpočet denního příjmu)');
-            } else if (!hasApiKey) {
-                alert('⚠️ Nastavte prosím Gemini API klíč pro použití AI analýzy.');
-            } else if (!hasUserData) {
-                alert('💡 Tip: Nastavte osobní údaje pro výpočet doporučeného denního příjmu.');
-            }
-        }, 500);
+        // 3. Setup real-time listener pro meals
+        setupMealsListener();
+
+        // 4. UI setup
+        updateCurrentDate();
+        updateSummary();
+        setupVoiceRecognition();
+        setupAutoSubmitListeners();
+
+        // 5. Zobrazit nastavení pokud nemá user profile
+        if (!userData) {
+            setTimeout(() => {
+                const settingsModal = document.getElementById('settingsModal');
+                settingsModal.classList.add('active');
+                alert('👋 Vítejte v AI Diet!\n\nPro začátek prosím nastavte osobní údaje (pro výpočet denního příjmu).');
+            }, 500);
+        }
+
+        console.log('✅ App initialized successfully');
+    } catch (error) {
+        console.error('❌ App initialization error:', error);
+        alert('Chyba při načítání dat. Zkuste se odhlásit a přihlásit znovu.');
     }
-});
-
-// === API KEY MANAGEMENT ===
-function saveApiKey() {
-    const key = document.getElementById('apiKey').value.trim();
-    if (!key) {
-        alert('Zadejte prosím API klíč');
-        return;
-    }
-
-    localStorage.setItem('geminiApiKey', key);
-    apiKey = key;
-    alert('API klíč byl uložen! Od teď se bude automaticky načítat.');
-
-    // Zobrazit zelenou indikaci
-    loadApiKey();
 }
 
-function loadApiKey() {
-    const savedKey = localStorage.getItem('geminiApiKey');
-    if (savedKey) {
-        apiKey = savedKey;
-        console.log('API klíč načten');
+// Vyčištění dat při odhlášení
+function clearAppData() {
+    console.log('🧹 Clearing app data');
 
-        // Zobrazit indikaci, že je klíč uložen - jen upravit API sekci
+    // Unsubscribe from meals listener
+    if (unsubscribeMealsListener) {
+        unsubscribeMealsListener();
+        unsubscribeMealsListener = null;
+    }
+
+    // Clear all data
+    meals = [];
+    apiKey = '';
+    currentUser = null;
+    userData = null;
+    dailyGoals = null;
+    isProcessing = false;
+
+    // Reset UI
+    const mealsList = document.getElementById('mealsList');
+    if (mealsList) {
+        mealsList.innerHTML = '<p class="empty-state">Zatím žádná jídla. Přidejte své první jídlo!</p>';
+    }
+}
+
+// === API KEY MANAGEMENT (from Firestore) ===
+async function loadApiKeyFromFirestore() {
+    try {
+        apiKey = await getApiKeyFromFirestore();
+        console.log('✅ API key loaded from Firestore');
+
+        // Update UI to show API key is loaded
         const apiKeySection = document.getElementById('apiKeySection');
         if (apiKeySection) {
             apiKeySection.innerHTML = `
                 <div style="padding: 12px 16px; background: #E8F5E9; border: 1px solid #C8E6C9; border-radius: 6px; color: #2C3E50;">
-                    ✅ API klíč je uložen
-                    <button onclick="changeApiKey()" style="margin-left: 10px; padding: 6px 12px; background: #fff; color: #2C3E50; border: 1px solid #E0E4E8; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.2s;">
-                        Změnit klíč
-                    </button>
-                    <button onclick="deleteApiKey()" style="margin-left: 5px; padding: 6px 12px; background: #7F8C8D; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.2s;">
-                        Smazat klíč
-                    </button>
+                    ✅ API klíč je načten z centrální databáze
+                    <p style="margin-top: 8px; font-size: 13px; color: #5F6368;">Všichni uživatelé sdílí společný API klíč</p>
                 </div>
             `;
         }
-    }
-}
+    } catch (error) {
+        console.error('❌ Failed to load API key:', error);
 
-function deleteApiKey() {
-    if (confirm('Opravdu chcete smazat uložený API klíč?')) {
-        localStorage.removeItem('geminiApiKey');
-        apiKey = '';
-        alert('API klíč byl smazán');
-        changeApiKey();
-    }
-}
+        // Update UI to show error
+        const apiKeySection = document.getElementById('apiKeySection');
+        if (apiKeySection) {
+            apiKeySection.innerHTML = `
+                <div style="padding: 12px 16px; background: #FFEBEE; border: 1px solid #FFCDD2; border-radius: 6px; color: #C62828;">
+                    ❌ Chyba při načítání API klíče
+                    <p style="margin-top: 8px; font-size: 13px;">Kontaktujte administrátora</p>
+                </div>
+            `;
+        }
 
-function changeApiKey() {
-    const apiKeySection = document.getElementById('apiKeySection');
-    if (apiKeySection) {
-        apiKeySection.innerHTML = `
-            <div class="form-group">
-                <label for="apiKey">Gemini API klíč:</label>
-                <input type="password" id="apiKey" placeholder="Zadejte váš Gemini API klíč">
-                <button onclick="saveApiKey()">💾 Uložit klíč</button>
-                <small>Získejte zdarma na <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
-            </div>
-        `;
+        throw error;
     }
 }
 
@@ -113,8 +115,8 @@ function toggleSettings() {
     }
 }
 
-// === USER DATA MANAGEMENT ===
-function saveUserData() {
+// === USER DATA MANAGEMENT (from Firestore) ===
+async function saveUserData() {
     const age = parseInt(document.getElementById('userAge').value);
     const gender = document.getElementById('userGender').value;
     const weight = parseFloat(document.getElementById('userWeight').value);
@@ -126,36 +128,71 @@ function saveUserData() {
         return;
     }
 
-    userData = { age, gender, weight, height, activity };
-    localStorage.setItem('userData', JSON.stringify(userData));
+    if (!currentUser) {
+        alert('Nejste přihlášen. Přihlaste se prosím.');
+        return;
+    }
 
-    // Spočítat denní cíle
-    calculateDailyGoals();
+    try {
+        const profileData = { age, gender, weight, height, activity };
 
-    alert('Osobní údaje byly uloženy!\n\nVaše doporučené denní hodnoty:\n' +
-          `Kalorie: ${dailyGoals.calories} kcal\n` +
-          `Bílkoviny: ${dailyGoals.protein}g\n` +
-          `Sacharidy: ${dailyGoals.carbs}g\n` +
-          `Tuky: ${dailyGoals.fat}g`);
+        // Save to Firestore
+        const calculatedGoals = await saveUserProfile(currentUser.uid, profileData);
 
-    // Obnovit zobrazení
-    updateSummary();
+        // Update local state
+        userData = profileData;
+        dailyGoals = calculatedGoals;
+
+        alert('Osobní údaje byly uloženy!\n\nVaše doporučené denní hodnoty:\n' +
+              `Kalorie: ${dailyGoals.calories} kcal\n` +
+              `Bílkoviny: ${dailyGoals.protein}g\n` +
+              `Sacharidy: ${dailyGoals.carbs}g\n` +
+              `Tuky: ${dailyGoals.fat}g`);
+
+        // Obnovit zobrazení
+        updateSummary();
+    } catch (error) {
+        console.error('Error saving user data:', error);
+        alert('Chyba při ukládání údajů. Zkuste to prosím znovu.');
+    }
 }
 
-function loadUserData() {
-    const saved = localStorage.getItem('userData');
-    if (saved) {
-        userData = JSON.parse(saved);
+async function loadUserDataFromFirestore() {
+    if (!currentUser) {
+        console.warn('No current user, skipping user data load');
+        return;
+    }
 
-        // Načíst do formuláře
-        document.getElementById('userAge').value = userData.age;
-        document.getElementById('userGender').value = userData.gender;
-        document.getElementById('userWeight').value = userData.weight;
-        document.getElementById('userHeight').value = userData.height;
-        document.getElementById('userActivity').value = userData.activity;
+    try {
+        const profile = await getUserProfile(currentUser.uid);
 
-        // Spočítat denní cíle
-        calculateDailyGoals();
+        if (profile) {
+            userData = {
+                age: profile.age,
+                gender: profile.gender,
+                weight: profile.weight,
+                height: profile.height,
+                activity: profile.activity
+            };
+
+            dailyGoals = profile.dailyGoals;
+
+            // Načíst do formuláře
+            document.getElementById('userAge').value = userData.age;
+            document.getElementById('userGender').value = userData.gender;
+            document.getElementById('userWeight').value = userData.weight;
+            document.getElementById('userHeight').value = userData.height;
+            document.getElementById('userActivity').value = userData.activity;
+
+            console.log('✅ User data loaded from Firestore');
+        } else {
+            console.log('ℹ️ No user profile found (new user)');
+            userData = null;
+            dailyGoals = null;
+        }
+    } catch (error) {
+        console.error('❌ Failed to load user data:', error);
+        throw error;
     }
 }
 
@@ -210,31 +247,27 @@ function calculateDailyGoals() {
     console.log('Daily goals calculated:', dailyGoals);
 }
 
-// === LOCAL STORAGE ===
-function loadMeals() {
-    const today = new Date();
-    const dateKey = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-    const savedMeals = localStorage.getItem(`meals_${dateKey}`);
-
-    if (savedMeals) {
-        try {
-            meals = JSON.parse(savedMeals);
-            console.log('Načteno jídel:', meals.length);
-        } catch (e) {
-            console.error('Chyba při načítání jídel:', e);
-            meals = [];
-        }
-    } else {
-        console.log('Žádná uložená jídla pro dnešek');
-        meals = [];
+// === MEALS MANAGEMENT (from Firestore with real-time listener) ===
+function setupMealsListener() {
+    if (!currentUser) {
+        console.warn('No current user, skipping meals listener setup');
+        return;
     }
-}
 
-function saveMeals() {
-    const today = new Date();
-    const dateKey = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-    localStorage.setItem(`meals_${dateKey}`, JSON.stringify(meals));
-    console.log('Uloženo jídel:', meals.length);
+    // Unsubscribe from previous listener if exists
+    if (unsubscribeMealsListener) {
+        unsubscribeMealsListener();
+    }
+
+    // Setup real-time listener for today's meals
+    unsubscribeMealsListener = listenToTodayMeals(currentUser.uid, (updatedMeals) => {
+        console.log('📥 Meals updated from Firestore:', updatedMeals.length);
+        meals = updatedMeals;
+        updateSummary();
+        displayMeals();
+    });
+
+    console.log('✅ Meals real-time listener setup complete');
 }
 
 // === TAB SWITCHING ===
@@ -828,26 +861,51 @@ function blobToBase64(blob) {
     });
 }
 
-// === MEALS MANAGEMENT ===
-function addMeal(nutritionData) {
-    const meal = {
-        id: Date.now(),
-        timestamp: new Date().toISOString(),
-        ...nutritionData
-    };
+// === ADD/DELETE MEALS (to Firestore) ===
+async function addMeal(nutritionData) {
+    if (!currentUser) {
+        alert('Nejste přihlášen. Přihlaste se prosím.');
+        return;
+    }
 
-    meals.push(meal);
-    saveMeals();
-    updateSummary();
-    displayMeals();
+    try {
+        // Check rate limit first
+        const canMakeCall = await checkRateLimit(currentUser.uid);
+        if (!canMakeCall) {
+            const remaining = await getRemainingApiCalls(currentUser.uid);
+            alert(`❌ Dosáhli jste denního limitu API volání.\n\nZbývající volání dnes: ${remaining}\n\nLimitujeme počet volání pro ochranu API klíče.`);
+            return;
+        }
+
+        // Add to Firestore (also increments API call counter)
+        await addMealToFirestore(currentUser.uid, nutritionData);
+        console.log('✅ Meal added successfully');
+
+        // Real-time listener will automatically update the UI
+    } catch (error) {
+        console.error('Error adding meal:', error);
+        alert('Chyba při ukládání jídla. Zkuste to prosím znovu.');
+    }
 }
 
-function deleteMeal(id) {
-    if (confirm('Opravdu chcete smazat toto jídlo?')) {
-        meals = meals.filter(meal => meal.id !== id);
-        saveMeals();
-        updateSummary();
-        displayMeals();
+async function deleteMeal(id) {
+    if (!confirm('Opravdu chcete smazat toto jídlo?')) {
+        return;
+    }
+
+    if (!currentUser) {
+        alert('Nejste přihlášen. Přihlaste se prosím.');
+        return;
+    }
+
+    try {
+        await deleteMealFromFirestore(currentUser.uid, id);
+        console.log('✅ Meal deleted successfully');
+
+        // Real-time listener will automatically update the UI
+    } catch (error) {
+        console.error('Error deleting meal:', error);
+        alert('Chyba při mazání jídla. Zkuste to prosím znovu.');
     }
 }
 
