@@ -162,6 +162,17 @@ function getTodayDateString() {
 }
 
 /**
+ * Get date string for a specific date offset
+ * @param {number} daysAgo - Number of days before today (0 = today)
+ * @returns {string} Date string like "2024-12-20"
+ */
+function getDateString(daysAgo = 0) {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    return date.toISOString().split('T')[0];
+}
+
+/**
  * Get all meals for today
  * @param {string} userId - User ID
  * @returns {Promise<Array>} Array of meal objects
@@ -183,6 +194,65 @@ async function getMealsForToday(userId) {
         return meals;
     } catch (error) {
         console.error('Error fetching meals:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get meals data for the last 7 days
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of objects with {date, meals, totalCalories}
+ */
+async function getWeeklyMealsData(userId) {
+    try {
+        const weekData = [];
+        const promises = [];
+
+        // Create promises for last 7 days (including today)
+        for (let i = 6; i >= 0; i--) {
+            const dateString = getDateString(i);
+            const promise = (async () => {
+                const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
+                const snapshot = await mealsRef.get();
+
+                const meals = [];
+                let totalCalories = 0;
+                let totalProtein = 0;
+                let totalCarbs = 0;
+                let totalFat = 0;
+
+                snapshot.forEach(doc => {
+                    const meal = doc.data();
+                    meals.push({
+                        id: doc.id,
+                        ...meal
+                    });
+                    totalCalories += meal.calories || 0;
+                    totalProtein += meal.protein || 0;
+                    totalCarbs += meal.carbs || 0;
+                    totalFat += meal.fat || 0;
+                });
+
+                return {
+                    date: dateString,
+                    meals,
+                    totalCalories,
+                    totalProtein,
+                    totalCarbs,
+                    totalFat,
+                    mealCount: meals.length
+                };
+            })();
+
+            promises.push(promise);
+        }
+
+        // Wait for all promises to resolve
+        const results = await Promise.all(promises);
+
+        return results;
+    } catch (error) {
+        console.error('Error fetching weekly meals:', error);
         throw error;
     }
 }

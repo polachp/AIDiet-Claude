@@ -730,6 +730,138 @@ button:disabled {
     color: var(--color-fat);
 }
 
+/* ==================== WEEKLY TREND - iOS Style ==================== */
+
+.weekly-trend {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    margin-top: var(--space-lg);
+}
+
+.weekly-trend-header {
+    margin-bottom: var(--space-lg);
+}
+
+.weekly-trend-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.weekly-trend-subtitle {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+.weekly-trend-chart {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--space-sm);
+    min-height: 200px;
+}
+
+.weekly-trend-loading {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    font-size: 15px;
+}
+
+.trend-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.trend-day-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.trend-day-date {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+}
+
+.trend-day-bar-container {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    min-height: 120px;
+    position: relative;
+}
+
+.trend-day-bar {
+    width: 100%;
+    max-width: 40px;
+    background: linear-gradient(180deg, var(--ios-blue) 0%, var(--ios-blue-dark) 100%);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    transition: all var(--transition-base);
+    position: relative;
+    min-height: 4px;
+}
+
+.trend-day-bar:hover {
+    transform: scaleY(1.02);
+    filter: brightness(1.1);
+}
+
+.trend-day-bar.over-goal {
+    background: linear-gradient(180deg, var(--ios-orange) 0%, #CC7700 100%);
+}
+
+.trend-day-bar.under-goal {
+    background: linear-gradient(180deg, var(--ios-gray-light) 0%, var(--ios-gray) 100%);
+}
+
+.trend-day-bar.goal-reached {
+    background: linear-gradient(180deg, var(--ios-green) 0%, #28A745 100%);
+}
+
+.trend-day-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: var(--space-xs);
+    text-align: center;
+}
+
+.trend-day-percent {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+.trend-day.today {
+    position: relative;
+}
+
+.trend-day.today::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--ios-blue);
+    border-radius: 50%;
+}
+
 /* ==================== MEALS LIST - iOS List Style ==================== */
 
 .meals-section {
@@ -1298,6 +1430,42 @@ button:disabled {
 
     .user-data-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Weekly Trend - Mobile Responsive */
+    .weekly-trend {
+        padding: var(--space-lg);
+    }
+
+    .weekly-trend-chart {
+        gap: var(--space-xs);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: var(--space-sm);
+    }
+
+    .trend-day-label {
+        font-size: 10px;
+    }
+
+    .trend-day-date {
+        font-size: 11px;
+    }
+
+    .trend-day-bar-container {
+        min-height: 100px;
+    }
+
+    .trend-day-bar {
+        max-width: 32px;
+    }
+
+    .trend-day-value {
+        font-size: 11px;
+    }
+
+    .trend-day-percent {
+        font-size: 10px;
     }
 
     .auth-container {

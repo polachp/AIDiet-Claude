@@ -43,6 +43,7 @@ async function initializeApp(user) {
         // Update UI
         updateCurrentDate();
         updateSummary();
+        updateWeeklyTrend();
 
         // Show settings for new users
         if (!AppState.userData) {
@@ -231,6 +232,7 @@ async function saveUserData() {
         alert(message);
 
         updateSummary();
+        updateWeeklyTrend();
     } catch (error) {
         console.error('Error saving user data:', error);
         alert('Chyba při ukládání údajů. Zkuste to prosím znovu.');
@@ -304,6 +306,7 @@ function setupMealsListener() {
             console.log('📥 Meals updated from Firestore:', updatedMeals.length);
             AppState.meals = updatedMeals;
             updateSummary();
+            updateWeeklyTrend();
             displayMeals();
         }
     );
@@ -1092,6 +1095,83 @@ function updateMacroBox(type, current, goal) {
                 percentElement.style.fontWeight = '700';
             }
         }
+    }
+}
+
+/**
+ * Update weekly trend display
+ */
+async function updateWeeklyTrend() {
+    const chartContainer = document.getElementById('weeklyTrendChart');
+    if (!chartContainer) return;
+
+    // Check if we have necessary data
+    if (!AppState.currentUser || !AppState.dailyGoals) {
+        chartContainer.innerHTML = '<div class="weekly-trend-loading">Nastavte osobní údaje pro zobrazení týdenního trendu</div>';
+        return;
+    }
+
+    try {
+        // Show loading state
+        chartContainer.innerHTML = '<div class="weekly-trend-loading">Načítám data...</div>';
+
+        // Fetch weekly data
+        const weeklyData = await getWeeklyMealsData(AppState.currentUser.uid);
+        const todayDateString = new Date().toISOString().split('T')[0];
+
+        // Find max calories for scaling
+        const maxCalories = Math.max(
+            ...weeklyData.map(day => day.totalCalories),
+            AppState.dailyGoals.calories
+        );
+
+        // Build HTML for chart
+        let chartHTML = '';
+        weeklyData.forEach(dayData => {
+            const date = new Date(dayData.date + 'T00:00:00'); // Parse date correctly
+            const dayName = date.toLocaleDateString('cs-CZ', { weekday: 'short' }).toUpperCase();
+            const dayNumber = date.getDate();
+            const monthNumber = date.getMonth() + 1;
+
+            const caloriesGoal = AppState.dailyGoals.calories;
+            const percent = caloriesGoal > 0 ? Math.round((dayData.totalCalories / caloriesGoal) * 100) : 0;
+
+            // Calculate bar height (percentage of max)
+            const barHeight = maxCalories > 0 ? (dayData.totalCalories / maxCalories) * 100 : 0;
+
+            // Determine bar style class
+            let barClass = 'trend-day-bar';
+            if (percent >= 95 && percent <= 105) {
+                barClass += ' goal-reached'; // Green - goal reached
+            } else if (percent > 105) {
+                barClass += ' over-goal'; // Orange - over goal
+            } else if (dayData.totalCalories > 0) {
+                barClass += ''; // Blue - normal
+            } else {
+                barClass += ' under-goal'; // Gray - no data
+            }
+
+            // Check if this is today
+            const isToday = dayData.date === todayDateString;
+            const dayClass = isToday ? 'trend-day today' : 'trend-day';
+
+            chartHTML += `
+                <div class="${dayClass}">
+                    <div class="trend-day-label">${dayName}</div>
+                    <div class="trend-day-date">${dayNumber}.${monthNumber}.</div>
+                    <div class="trend-day-bar-container">
+                        <div class="${barClass}" style="height: ${barHeight}%"></div>
+                    </div>
+                    <div class="trend-day-value">${dayData.totalCalories} kcal</div>
+                    <div class="trend-day-percent">${percent}%</div>
+                </div>
+            `;
+        });
+
+        chartContainer.innerHTML = chartHTML;
+    } catch (error) {
+        console.error('Error updating weekly trend:', error);
+        chartContainer.innerHTML = '<div class="weekly-trend-loading">Chyba při načítání dat</div>';
     }
 }
 
