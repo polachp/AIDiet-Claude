@@ -1236,16 +1236,27 @@ function changeDate(direction) {
     const newDateString = currentDate.toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
 
+    console.log('🔄 Change date:', {
+        direction,
+        currentSelected: AppState.selectedDate,
+        newDate: newDateString,
+        today,
+        isToday: newDateString === today
+    });
+
     // Don't allow future dates
     if (newDateString > today) {
+        console.log('❌ Blocked: Future date not allowed');
         return;
     }
 
     // Set to new date (or null if it's today)
     if (newDateString === today) {
         AppState.selectedDate = null;
+        console.log('✅ Reset to today (null)');
     } else {
         AppState.selectedDate = newDateString;
+        console.log('✅ Set to:', newDateString);
     }
 
     updateSelectedDateDisplay();
@@ -1308,7 +1319,9 @@ function updateSelectedDateDisplay() {
 function updateNavigationButtons() {
     const nextBtn = document.getElementById('nextDayBtn');
     if (nextBtn) {
-        nextBtn.disabled = isSelectedDateToday();
+        const isToday = isSelectedDateToday();
+        nextBtn.disabled = isToday;
+        console.log('🔘 Next button:', isToday ? 'DISABLED' : 'ENABLED', '(selectedDate:', AppState.selectedDate, ')');
     }
 }
 
