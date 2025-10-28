@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="50" fill="#7B9F8E"/>
+
+  <!-- Plate -->
+  <circle cx="50" cy="55" r="38" fill="#F5F5F5"/>
+  <circle cx="50" cy="55" r="38" fill="none" stroke="#E0E0E0" stroke-width="2"/>
+
+  <!-- Left side: Steak (meat) -->
+  <ellipse cx="32" cy="50" rx="14" ry="12" fill="#8B4049"/>
+  <ellipse cx="30" cy="48" rx="10" ry="8" fill="#A85560"/>
+  <ellipse cx="28" cy="47" rx="4" ry="3" fill="#C97885" opacity="0.6"/>
+
+  <!-- Right side: Avocado half -->
+  <ellipse cx="68" cy="52" rx="13" ry="16" fill="#5A7D4E"/>
+  <ellipse cx="68" cy="52" rx="10" ry="13" fill="#C5E384"/>
+  <circle cx="68" cy="54" r="5" fill="#8B6F47"/>
+  <ellipse cx="67" cy="53" rx="2" ry="2.5" fill="#A68B5B" opacity="0.5"/>
+
+  <!-- Fork on the side -->
+  <line x1="20" y1="70" x2="20" y2="85" stroke="#A0A0A0" stroke-width="2"/>
+  <line x1="17" y1="70" x2="17" y2="78" stroke="#A0A0A0" stroke-width="1.5"/>
+  <line x1="20" y1="70" x2="20" y2="78" stroke="#A0A0A0" stroke-width="1.5"/>
+  <line x1="23" y1="70" x2="23" y2="78" stroke="#A0A0A0" stroke-width="1.5"/>
+
+  <!-- Knife on the other side -->
+  <rect x="78" y="70" width="2" height="15" fill="#A0A0A0" rx="1"/>
+  <path d="M 77 70 L 81 70 L 80 65 L 78 65 Z" fill="#C0C0C0"/>
+</svg>

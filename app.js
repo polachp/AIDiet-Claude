@@ -380,7 +380,7 @@ function displayMeals() {
             <div class="meal-left">
                 <div class="meal-name-compact">${mealName}</div>
                 <div class="meal-meta">
-                    <span class="meal-percent-badge">${caloriePercent}%</span>
+                    <span class="meal-percent-badge" data-percent="${caloriePercent}">${caloriePercent}%</span>
                     <span class="meal-calories">${meal.calories} kcal</span>
                 </div>
             </div>
