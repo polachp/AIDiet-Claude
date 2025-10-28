@@ -4,139 +4,95 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Diet is a single-page web application for tracking calorie intake using Google Gemini API. Built with vanilla JavaScript, HTML, and CSS - no build tools or frameworks required. All data stored client-side in LocalStorage.
+AI Diet is a multi-user web application for tracking calorie intake using Google Gemini API. Built with vanilla JavaScript, HTML, and CSS - no build tools required. Uses Firebase for authentication (Google OAuth + Email/Password) and cloud storage (Firestore). Centralized API key shared across all users.
 
 ## Running the Application
 
-**Local Development (Required for voice input):**
-```bash
-# Double-click START-SERVER.bat (auto-detects Python/PHP/Node.js)
-# OR manually:
-python -m http.server 8000
-# Then open http://localhost:8000
-```
-
-**Direct file opening** works but disables voice input (MediaRecorder requires localhost/HTTPS).
-
-**Testing API Integration:**
-Open `test-api.html` to debug Gemini API connectivity and model availability.
+**Local dev (for voice input):** Use `START-SERVER.bat` or `python -m http.server 8000`, then open `http://localhost:8000`.
+**Direct file opening:** Works but disables voice (MediaRecorder needs localhost/HTTPS).
+**Test API:** Open `test-api.html` to debug Gemini connectivity.
 
 ## Architecture
 
 ### Data Flow
 ```
-User Input (text/photo/audio)
+Firebase Auth → User logged in
+  → User Input (text/photo/audio)
   → Gemini API (multimodal analysis)
   → parseNutritionData()
-  → addMeal()
-  → LocalStorage
+  → addMealToFirestore()
+  → Firestore real-time listener
   → updateSummary() + displayMeals()
 ```
 
 ### Key State Management
 
-**Global State Variables (app.js:1-6):**
-- `meals[]` - Array of meal objects for current day only
-- `apiKey` - Gemini API key from LocalStorage
-- `userData` - User's age, gender, weight, height, activity level
-- `dailyGoals` - Calculated TDEE and macro targets
+**Global Variables (app.js):**
+- `currentUser` - Firebase user object (uid, email)
+- `meals[]` - Today's meals (synced via real-time listener)
+- `apiKey` - Shared Gemini API key from Firestore `/config/gemini`
+- `userData` - User profile (age, gender, weight, height, activity)
+- `dailyGoals` - Calculated TDEE and macros
+- `unsubscribeMealsListener` - Firestore listener cleanup function
 
-**LocalStorage Keys:**
-- `geminiApiKey` - Persists across sessions
-- `userData` - Persists across sessions
-- `meals_{date}` - Per-day meal storage (e.g., `meals_Fri Dec 20 2024`)
+**Firestore Structure:**
+- `/config/gemini` - Shared API key (read-only for clients)
+- `/users/{userId}/data/profile` - User profile + calculated goals
+- `/users/{userId}/meals/{date}/items/{mealId}` - Meal entries
+- `/users/{userId}/rateLimit/{date}` - API call counter (max 100/day)
+
+### Firebase Integration
+
+**Auth (auth.js):** Google OAuth + Email/Password. Auth observer in `firebase-config.js` → `showMainApp()` or `showAuthUI()`.
+**Service Layer (firestore-service.js):** `getApiKeyFromFirestore()`, `saveUserProfile()` (calculates goals), `listenToTodayMeals()` (real-time), `addMealToFirestore()`, `deleteMealFromFirestore()`, rate limiting functions.
+**Init Flow:** Auth change → `initializeApp(user)` loads API key, profile, sets listener OR `clearAppData()` on logout.
 
 ### Gemini API Integration
 
-**Model Fallback System (app.js:115-190):**
-Automatically tries multiple models in order until one succeeds:
-1. `gemini-2.5-flash` (preferred)
-2. `gemini-2.5-flash-lite`
-3. Falls back through both `v1beta` and `v1` API versions
-
-**Three API Call Types:**
-- `callGeminiAPI(prompt, imageBase64)` - Text and image analysis
-- `callGeminiAPIWithAudio(prompt, audioBase64)` - Audio transcription + analysis
-- Both return JSON: `{name, calories, protein, carbs, fat}`
-
-### Voice Input Implementation
-
-Uses **MediaRecorder API** (not Web Speech API) to record audio, then sends raw audio to Gemini multimodal API for transcription and nutrition analysis in a single request. This approach:
-- Works in all modern browsers (not just Chrome)
-- Requires localhost or HTTPS
-- Handles Czech language via Gemini's multilingual capabilities
+**Model Fallback:** Tries `gemini-2.5-flash` → `gemini-2.5-flash-lite` across `v1beta` and `v1` API versions.
+**API Calls:** `callGeminiAPI(prompt, imageBase64)` and `callGeminiAPIWithAudio(prompt, audioBase64)` return `{name, calories, protein, carbs, fat}`.
+**Voice Input:** MediaRecorder API records audio, Gemini transcribes + analyzes in one request. Requires localhost/HTTPS.
 
 ### Nutrition Calculations
 
-**BMR Calculation (Mifflin-St Jeor equation in app.js:153-161):**
-- Male: `10 × weight + 6.25 × height - 5 × age + 5`
-- Female: `10 × weight + 6.25 × height - 5 × age - 161`
-
+**BMR (Mifflin-St Jeor):** Male: `10×weight + 6.25×height - 5×age + 5`, Female: same minus 161
 **TDEE:** `BMR × activity_factor`
-
-**Macro Distribution (app.js:176-189):**
-- Protein: 30% of calories (÷ 4 kcal/g = grams)
-- Carbs: 40% of calories (÷ 4 kcal/g = grams)
-- Fat: 30% of calories (÷ 9 kcal/g = grams)
+**Macros:** Protein 30% (÷4), Carbs 40% (÷4), Fat 30% (÷9) of total calories
 
 ### UI Patterns
 
-**Settings Toggle (app.js:112-125):**
-Settings section hidden by default. First-time users see auto-opened settings with onboarding alert. Button in header toggles visibility.
-
-**Circular Progress SVG (styles.css:348-369):**
-Macro nutrients displayed as circular progress indicators using SVG `stroke-dashoffset` animation:
-```javascript
-const circumference = 2 * Math.PI * 52; // radius = 52
-const offset = circumference - (percent / 100) * circumference;
-circle.style.strokeDashoffset = offset;
-```
-
-**Dynamic HTML Injection:**
-API key section and meal list use `innerHTML` updates. Be careful when modifying these - maintain the element IDs:
-- `apiKeySection` - Container for API key UI state
-- `userDataSection` - Never gets replaced, only reads values
-- `mealsList` - Fully regenerated on each meal change
+**Auth Toggle:** `authScreen` and `mainApp` switched via `display: none/block`. Auth state observer in `firebase-config.js` handles transitions.
+**Settings Modal:** Hidden by default, toggled via header button. Settings button in header.
+**Circular Progress:** SVG `stroke-dashoffset` animation for macro nutrients (radius 52, circumference = 2πr).
+**Dynamic Updates:** `mealsList` regenerated on Firestore listener callback. Preserve element IDs: `authScreen`, `mainApp`, `loginForm`, `registerForm`, `userDataSection`, `mealsList`.
 
 ### Design System
 
-**Pastel Color Variables (styles.css:7-23):**
-- Primary: `#7B9F8E` (sage green)
-- Secondary: `#8BA3C7` (dusty blue)
-- Calorie card: `#FFE5E5` (pale pink)
-- Protein: `#E5F3FF` (pale blue)
-- Carbs: `#FFF5E5` (pale orange)
-- Fat: `#F0E5FF` (pale purple)
-
-**Responsive Breakpoint:** 600px for mobile layout
+**Colors:** Primary `#7B9F8E` (sage), Secondary `#8BA3C7` (blue), Calorie `#FFE5E5`, Protein `#E5F3FF`, Carbs `#FFF5E5`, Fat `#F0E5FF`
+**Responsive:** 600px breakpoint for mobile
 
 ## Common Modifications
 
-**Adding a new input type:**
-1. Add tab button in `index.html` with `switchTab('newtype')`
-2. Add tab content div with id `newtypeTab`
-3. Create `analyzeNewType()` function that calls `callGeminiAPI()`
-4. Parse response with `parseNutritionData()` and call `addMeal()`
-
-**Changing macro distribution:**
-Modify percentages in `calculateDailyGoals()` (app.js:176-189). Ensure total = 100%.
-
-**Supporting new Gemini models:**
-Add model name to `modelsToTry` array in `callGeminiAPI()` or `callGeminiAPIWithAudio()`.
+**New input type:** Add tab in `index.html`, create `analyzeNewType()` → `callGeminiAPI()` → `parseNutritionData()` → `addMealToFirestore()`.
+**Change macros:** Edit percentages in `calculateDailyGoals()`. Total must = 100%.
+**New Gemini models:** Add to `modelsToTry` array in API functions.
 
 ## Deployment
 
-No build process required. Deploy these files directly:
-- `index.html`, `app.js`, `styles.css` (required)
+No build process required. Deploy these files:
+- `index.html`, `app.js`, `styles.css`, `auth.js`, `firebase-config.js`, `firestore-service.js`
 - `netlify.toml`, `vercel.json` (optional, for respective platforms)
-- `START-SERVER.bat`, `test-api.html`, `README.md` (dev tools, not needed in production)
+- `START-SERVER.bat`, `test-api.html`, `FIREBASE-SETUP.md` (dev tools, not needed in production)
+
+**Prerequisites:** Configure Firebase project and update `firebase-config.js` with your credentials (see `FIREBASE-SETUP.md`).
 
 Works on: GitHub Pages, Netlify, Vercel, Railway, any static host.
 
 ## Important Constraints
 
-- **No backend** - All data in LocalStorage (user-specific, not synced)
-- **Daily data only** - Meals cleared each day (keyed by date string)
-- **Single user** - No authentication or multi-user support
+- **Firebase required** - Authentication and Firestore database mandatory
+- **Multi-user** - Each user has isolated data, shared API key
+- **Rate limited** - Max 100 Gemini API calls per user per day
+- **Daily data** - Meals stored per date, older dates remain in Firestore
 - **Gemini API required** - No offline fallback
 - **Czech language** - UI text and alerts in Czech
