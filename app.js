@@ -191,6 +191,7 @@ async function saveUserData() {
     const weight = parseFloat(document.getElementById('userWeight').value);
     const height = parseInt(document.getElementById('userHeight').value);
     const activity = parseFloat(document.getElementById('userActivity').value);
+    const goal = document.getElementById('userGoal').value;
 
     if (!age || !weight || !height) {
         alert('Vyplňte prosím všechny údaje');
@@ -203,17 +204,31 @@ async function saveUserData() {
     }
 
     try {
-        const profileData = { age, gender, weight, height, activity };
+        const profileData = { age, gender, weight, height, activity, goal };
         const calculatedGoals = await saveUserProfile(AppState.currentUser.uid, profileData);
 
         AppState.userData = profileData;
         AppState.dailyGoals = calculatedGoals;
 
-        alert('Osobní údaje byly uloženy!\n\nVaše doporučené denní hodnoty:\n' +
-              `Kalorie: ${AppState.dailyGoals.calories} kcal\n` +
-              `Bílkoviny: ${AppState.dailyGoals.protein}g\n` +
-              `Sacharidy: ${AppState.dailyGoals.carbs}g\n` +
-              `Tuky: ${AppState.dailyGoals.fat}g`);
+        // Build alert message with TDEE and deficit info
+        let message = 'Osobní údaje byly uloženy!\n\n';
+        message += `BMR (bazální metabolismus): ${calculatedGoals.bmr} kcal\n`;
+        message += `TDEE (udržovací kalorie): ${calculatedGoals.tdee} kcal\n`;
+
+        if (calculatedGoals.deficit !== 0) {
+            const deficitText = calculatedGoals.deficit > 0 ? `+${calculatedGoals.deficit}` : calculatedGoals.deficit;
+            message += `Deficit/Přebytek: ${deficitText} kcal/den\n\n`;
+        } else {
+            message += '\n';
+        }
+
+        message += 'Vaše denní cílové hodnoty:\n';
+        message += `Kalorie: ${calculatedGoals.calories} kcal\n`;
+        message += `Bílkoviny: ${calculatedGoals.protein}g\n`;
+        message += `Sacharidy: ${calculatedGoals.carbs}g\n`;
+        message += `Tuky: ${calculatedGoals.fat}g`;
+
+        alert(message);
 
         updateSummary();
     } catch (error) {
@@ -240,7 +255,8 @@ async function loadUserDataFromFirestore() {
                 gender: profile.gender,
                 weight: profile.weight,
                 height: profile.height,
-                activity: profile.activity
+                activity: profile.activity,
+                goal: profile.goal || 'maintain'
             };
 
             AppState.dailyGoals = profile.dailyGoals;
@@ -251,6 +267,7 @@ async function loadUserDataFromFirestore() {
             document.getElementById('userWeight').value = AppState.userData.weight;
             document.getElementById('userHeight').value = AppState.userData.height;
             document.getElementById('userActivity').value = AppState.userData.activity;
+            document.getElementById('userGoal').value = AppState.userData.goal;
 
             console.log('✅ User data loaded from Firestore');
         } else {
@@ -972,30 +989,46 @@ function updateSummary() {
     document.getElementById('totalCalories').textContent = totals.calories;
 
     if (AppState.dailyGoals) {
+        // Displayed percentage: relative to goal (100% = goal achieved)
         const caloriesPercent = Math.round((totals.calories / AppState.dailyGoals.calories) * 100);
+
+        // Visual progress bar: scaled to TDEE (100% bar width = TDEE)
+        const progressWidth = (totals.calories / AppState.dailyGoals.tdee) * 100;
+
+        // Goal marker position: where the goal sits on the TDEE scale
+        const markerPosition = (AppState.dailyGoals.calories / AppState.dailyGoals.tdee) * 100;
 
         const caloriesPercentageEl = document.getElementById('caloriesPercentage');
         caloriesPercentageEl.textContent = caloriesPercent + '%';
         document.getElementById('caloriesGoalValue').textContent = AppState.dailyGoals.calories;
 
         const progressFill = document.getElementById('caloriesProgressFill');
-        progressFill.style.width = Math.min(caloriesPercent, 100) + '%';
+        // Progress bar width based on TDEE (can go up to 100% = TDEE)
+        progressFill.style.width = Math.min(progressWidth, 100) + '%';
+
+        // Position the goal marker
+        const goalMarker = document.getElementById('caloriesGoalMarker');
+        if (goalMarker) {
+            goalMarker.style.left = markerPosition + '%';
+            goalMarker.style.right = 'auto';
+        }
 
         // Color coding - iOS Style
+        // Based on displayed percentage (relative to goal)
         if (caloriesPercent >= 110) {
-            progressFill.style.background = '#FF3B30'; // iOS Red
+            progressFill.style.background = '#FF3B30'; // iOS Red - exceeded goal significantly
             caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '700';
         } else if (caloriesPercent >= 95) {
-            progressFill.style.background = '#FF9500'; // iOS Orange
+            progressFill.style.background = '#FF9500'; // iOS Orange - close to goal
             caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '700';
         } else if (caloriesPercent >= 80) {
-            progressFill.style.background = '#34C759'; // iOS Green
+            progressFill.style.background = '#34C759'; // iOS Green - good progress
             caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '600';
         } else {
-            progressFill.style.background = 'rgba(255, 255, 255, 0.9)';
+            progressFill.style.background = 'rgba(255, 255, 255, 0.9)'; // White - early progress
             caloriesPercentageEl.style.color = '#FFFFFF';
             caloriesPercentageEl.style.fontWeight = '600';
         }

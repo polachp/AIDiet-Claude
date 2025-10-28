@@ -577,10 +577,10 @@ button:disabled {
 
 .calories-progress-bar {
     width: 100%;
-    height: 8px;
+    height: 12px;
     background: rgba(255, 255, 255, 0.25);
     border-radius: var(--radius-full);
-    overflow: hidden;
+    overflow: visible;
     position: relative;
     z-index: 1;
 }
@@ -590,6 +590,59 @@ button:disabled {
     background: var(--text-white);
     border-radius: var(--radius-full);
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 2;
+}
+
+/* Goal Marker - označuje 100% (cíl hubnutí) */
+.calories-goal-marker {
+    position: absolute;
+    top: -8px;
+    transform: translateX(-50%);
+    z-index: 3;
+    pointer-events: none;
+}
+
+.goal-marker-triangle {
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 12px solid rgba(255, 255, 255, 0.95);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+/* Calories Info (TDEE & Deficit) */
+.calories-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    position: relative;
+    z-index: 1;
+}
+
+.calories-info-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.calories-info-label {
+    opacity: 0.8;
+    font-weight: 400;
+}
+
+.calories-info-separator {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 300;
 }
 
 /* Macros Grid - iOS Cards */

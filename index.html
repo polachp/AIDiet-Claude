@@ -11,7 +11,7 @@
     <div id="authScreen" class="auth-screen">
         <div class="auth-container">
             <div class="auth-header">
-                <h1>🍽️ AI Diet</h1>
+                <h1>AI calories counter</h1>
                 <p>Přihlaste se pro sledování kalorií</p>
             </div>
 
@@ -151,6 +151,15 @@
                                     <option value="1.9">Extra aktivní (2x denně)</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label for="userGoal">Cíl:</label>
+                                <select id="userGoal">
+                                    <option value="maintain">Udržet váhu (100% TDEE)</option>
+                                    <option value="loss-mild">Mírné hubnutí (90% TDEE, -10%)</option>
+                                    <option value="loss-moderate">Střední hubnutí (85% TDEE, -15%)</option>
+                                    <option value="loss-aggressive">Rychlé hubnutí (80% TDEE, -20%)</option>
+                                </select>
+                            </div>
                         </div>
                         <button onclick="saveUserData()" class="btn-primary" style="margin-top: 12px;">💾 Uložit osobní údaje</button>
                     </div>
@@ -222,6 +231,9 @@
                 </div>
                 <div class="calories-progress-bar">
                     <div class="calories-progress-fill" id="caloriesProgressFill"></div>
+                    <div class="calories-goal-marker" id="caloriesGoalMarker">
+                        <div class="goal-marker-triangle"></div>
+                    </div>
                 </div>
             </div>
 

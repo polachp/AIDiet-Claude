@@ -75,33 +75,78 @@ async function saveUserProfile(userId, profileData) {
 
 /**
  * Calculate daily goals from profile data
- * @param {Object} profile - {age, gender, weight, height, activity}
- * @returns {Object} Daily goals {calories, protein, carbs, fat}
+ * @param {Object} profile - {age, gender, weight, height, activity, goal}
+ * @returns {Object} Daily goals {calories, protein, carbs, fat, tdee, bmr, deficit}
  */
 function calculateDailyGoalsFromProfile(profile) {
-    const { age, gender, weight, height, activity } = profile;
+    const { age, gender, weight, activity, goal = 'maintain' } = profile;
 
-    // BMR calculation (Mifflin-St Jeor equation)
+    // BMR calculation (Oxford/Henry equation - 2005)
+    // More accurate than Mifflin-St Jeor, based on 10,552 measurements worldwide
     let bmr;
+
     if (gender === 'male') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+        // Male Oxford/Henry equations by age group
+        if (age < 30) {
+            bmr = 16.0 * weight + 545;
+        } else if (age < 60) {
+            bmr = 14.2 * weight + 593;
+        } else if (age < 70) {
+            bmr = 13.0 * weight + 567;
+        } else {
+            bmr = 13.7 * weight + 481;
+        }
     } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+        // Female Oxford/Henry equations by age group
+        if (age < 30) {
+            bmr = 13.1 * weight + 558;
+        } else if (age < 60) {
+            bmr = 9.74 * weight + 694;
+        } else if (age < 70) {
+            bmr = 10.2 * weight + 572;
+        } else {
+            bmr = 10.0 * weight + 577;
+        }
     }
 
-    // TDEE = BMR * activity factor
+    // TDEE = BMR * activity factor (maintenance calories)
     const tdee = Math.round(bmr * parseFloat(activity));
 
+    // Apply percentage-based calorie adjustment based on goal
+    let tdeePercentage = 1.0; // 100% = maintain
+    switch (goal) {
+        case 'loss-mild':
+            tdeePercentage = 0.90; // -10%
+            break;
+        case 'loss-moderate':
+            tdeePercentage = 0.85; // -15%
+            break;
+        case 'loss-aggressive':
+            tdeePercentage = 0.80; // -20%
+            break;
+        case 'maintain':
+        default:
+            tdeePercentage = 1.0; // 0%
+            break;
+    }
+
+    // Target calories (TDEE * percentage)
+    const targetCalories = Math.round(tdee * tdeePercentage);
+    const calorieAdjustment = targetCalories - tdee; // For display purposes
+
     // Macro distribution (30% protein, 40% carbs, 30% fat)
-    const proteinCalories = tdee * 0.30;
-    const carbsCalories = tdee * 0.40;
-    const fatCalories = tdee * 0.30;
+    const proteinCalories = targetCalories * 0.30;
+    const carbsCalories = targetCalories * 0.40;
+    const fatCalories = targetCalories * 0.30;
 
     return {
-        calories: tdee,
+        calories: targetCalories,
         protein: Math.round(proteinCalories / 4), // 4 kcal per gram
         carbs: Math.round(carbsCalories / 4),     // 4 kcal per gram
-        fat: Math.round(fatCalories / 9)          // 9 kcal per gram
+        fat: Math.round(fatCalories / 9),         // 9 kcal per gram
+        tdee: tdee,                               // Maintenance calories
+        bmr: Math.round(bmr),                     // Basal metabolic rate
+        deficit: calorieAdjustment                // Calorie adjustment (+/-)
     };
 }
 
