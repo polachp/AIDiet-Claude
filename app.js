@@ -326,6 +326,10 @@ function setupMealsListener() {
     );
 
     console.log('✅ Meals real-time listener setup complete for', dateString);
+
+    // Update date displays after listener is set up
+    updateSelectedDateDisplay();
+    updateNavigationButtons();
 }
 
 /**
