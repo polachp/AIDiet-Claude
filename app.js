@@ -165,15 +165,29 @@ function setupEventListeners() {
         });
     }
 
-    // Date navigation buttons - use onclick to avoid duplicate listeners
+    // Date navigation buttons
     const prevDayBtn = document.getElementById('prevDayBtn');
     if (prevDayBtn) {
-        prevDayBtn.onclick = goToPreviousDay;
+        // Remove any existing listeners first
+        const oldPrev = prevDayBtn.cloneNode(true);
+        prevDayBtn.parentNode.replaceChild(oldPrev, prevDayBtn);
+        oldPrev.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            goToPreviousDay();
+        });
     }
 
     const nextDayBtn = document.getElementById('nextDayBtn');
     if (nextDayBtn) {
-        nextDayBtn.onclick = goToNextDay;
+        // Remove any existing listeners first
+        const oldNext = nextDayBtn.cloneNode(true);
+        nextDayBtn.parentNode.replaceChild(oldNext, nextDayBtn);
+        oldNext.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            goToNextDay();
+        });
     }
 }
 
