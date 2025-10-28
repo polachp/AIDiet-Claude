@@ -39,17 +39,17 @@
     --shadow-xl: 0 3px 8px rgba(0, 0, 0, 0.05);
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.03);
 
-    /* Macro colors - Flat Professional Solid Colors */
+    /* Macro colors - Pastel colors matching icons */
     --color-calories: #5D6D7E;
-    --color-protein: #52796F;
-    --color-carbs: #6C7A89;
-    --color-fat: #95A5A6;
+    --color-protein: #EF9A9A;     /* 🥩 Pastelově růžová (maso) */
+    --color-carbs: #FFE082;       /* 🌾 Pastelově zlatá (obilí) */
+    --color-fat: #A5D6A7;         /* 🥑 Pastelově zelená (avokádo) */
 
-    /* Solid colors for borders/accents (same as above for flat design) */
+    /* Solid colors for borders/accents */
     --color-calories-solid: #5D6D7E;
-    --color-protein-solid: #52796F;
-    --color-carbs-solid: #6C7A89;
-    --color-fat-solid: #95A5A6;
+    --color-protein-solid: #E57373;
+    --color-carbs-solid: #FFD54F;
+    --color-fat-solid: #81C784;
 
     /* Border radius - Flatter style */
     --radius-sm: 4px;
@@ -545,10 +545,43 @@ button:disabled {
     background: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    padding: var(--space-lg);
+    padding: var(--space-xl) var(--space-lg);
     text-align: center;
     transition: all var(--transition-base);
     position: relative;
+    overflow: hidden;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Rising fill background - roste odspodu */
+.macro-box::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--fill-height, 0%);
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+    border-radius: var(--radius-md);
+}
+
+/* 🥩 Protein - růžový gradient (maso) */
+.macro-box[data-macro="protein"]::before {
+    background: linear-gradient(to top, rgba(239, 154, 154, 0.4), rgba(239, 154, 154, 0.08));
+}
+
+/* 🌾 Carbs - zlatý gradient (obilí) */
+.macro-box[data-macro="carbs"]::before {
+    background: linear-gradient(to top, rgba(255, 224, 130, 0.5), rgba(255, 224, 130, 0.1));
+}
+
+/* 🥑 Fat - zelený gradient (avokádo) */
+.macro-box[data-macro="fat"]::before {
+    background: linear-gradient(to top, rgba(165, 214, 167, 0.45), rgba(165, 214, 167, 0.1));
 }
 
 .macro-box:hover {
@@ -559,53 +592,54 @@ button:disabled {
 .macro-box-icon {
     font-size: 2em;
     margin-bottom: var(--space-sm);
-    opacity: 0.8;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .macro-box-label {
-    font-size: 0.85em;
+    font-size: 0.75em;
     color: var(--text-secondary);
     text-transform: uppercase;
     font-weight: 600;
     letter-spacing: 0.5px;
-    margin-bottom: var(--space-xs);
+    margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 1;
 }
 
-.macro-box-value {
-    font-size: 2em;
+/* PROCENTA - hlavní číslo, největší a nejvýraznější */
+.macro-box-percent {
+    font-size: 3em;
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: var(--space-xs);
+    display: block;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* GRAMY - vedlejší info, menší a méně výrazné */
+.macro-box-value {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #5D6D7E;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 .macro-box-goal {
-    font-size: 0.85em;
-    color: var(--text-tertiary);
-    margin-bottom: var(--space-sm);
-}
-
-.macro-box-percent {
-    font-size: 0.9em;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: var(--radius-sm);
-    display: inline-block;
-}
-
-/* Barevné odlišení procent podle typu makroživiny */
-.macro-box[data-macro="protein"] .macro-box-percent {
-    background: rgba(82, 121, 111, 0.15);
-    color: var(--color-protein);
-}
-
-.macro-box[data-macro="carbs"] .macro-box-percent {
-    background: rgba(108, 122, 137, 0.15);
-    color: var(--color-carbs);
-}
-
-.macro-box[data-macro="fat"] .macro-box-percent {
-    background: rgba(149, 165, 166, 0.15);
-    color: var(--color-fat);
+    font-size: 0.8em;
+    color: #7F8C8D;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 /* Mobile responsive */
@@ -616,11 +650,16 @@ button:disabled {
     }
 
     .macro-box {
-        padding: var(--space-md);
+        padding: var(--space-lg) var(--space-md);
+        min-height: 160px;
+    }
+
+    .macro-box-percent {
+        font-size: 2.5em;
     }
 
     .macro-box-value {
-        font-size: 1.8em;
+        font-size: 1em;
     }
 }
 

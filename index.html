@@ -9,9 +9,9 @@
 <body>
     <div class="container">
         <header>
-            <h1>🍽️ AI Diet</h1>
+            <h1>🍽️ AI calories count</h1>
             <p>Sledování kalorií s pomocí AI</p>
-            <button onclick="toggleSettings()" class="settings-btn" id="settingsBtn">⚙️ Nastavení</button>
+            <button onclick="toggleSettings()" class="settings-btn" id="settingsBtn">⚙️</button>
         </header>
 
         <!-- Settings Modal -->
@@ -88,7 +88,7 @@
             <div id="textTab" class="tab-content active">
                 <div class="form-group">
                     <input type="text" id="textInput" placeholder="Napište co jste snědli, např: 'dva rohlíky s máslem a šunkou, jogurt'" />
-                    <small style="display: block; margin-top: 8px; color: var(--text-secondary); font-size: 0.9em;">Stiskněte Enter pro analýzu</small>
+                    <button onclick="analyzeText()" class="btn-primary" style="margin-top: 8px;">🔍 Analyzovat</button>
                 </div>
             </div>
 
@@ -144,33 +144,33 @@
                 <div class="macro-box" data-macro="protein">
                     <div class="macro-box-icon">🥩</div>
                     <div class="macro-box-label">Bílkoviny</div>
+                    <div class="macro-box-percent" id="proteinPercent">0%</div>
                     <div class="macro-box-value">
                         <span id="totalProtein">0</span>g
                     </div>
                     <div class="macro-box-goal" id="proteinGoal">z 0g</div>
-                    <div class="macro-box-percent" id="proteinPercent">0%</div>
                 </div>
 
                 <!-- Sacharidy -->
                 <div class="macro-box" data-macro="carbs">
                     <div class="macro-box-icon">🌾</div>
                     <div class="macro-box-label">Sacharidy</div>
+                    <div class="macro-box-percent" id="carbsPercent">0%</div>
                     <div class="macro-box-value">
                         <span id="totalCarbs">0</span>g
                     </div>
                     <div class="macro-box-goal" id="carbsGoal">z 0g</div>
-                    <div class="macro-box-percent" id="carbsPercent">0%</div>
                 </div>
 
                 <!-- Tuky -->
                 <div class="macro-box" data-macro="fat">
                     <div class="macro-box-icon">🥑</div>
                     <div class="macro-box-label">Tuky</div>
+                    <div class="macro-box-percent" id="fatPercent">0%</div>
                     <div class="macro-box-value">
                         <span id="totalFat">0</span>g
                     </div>
                     <div class="macro-box-goal" id="fatGoal">z 0g</div>
-                    <div class="macro-box-percent" id="fatPercent">0%</div>
                 </div>
             </div>
         </section>

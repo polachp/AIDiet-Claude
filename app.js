@@ -434,13 +434,27 @@ function parseNutritionData(aiResponse) {
             }
 
             // Zaokrouhlit všechna čísla na celá čísla
-            return {
+            const result = {
                 name: parsed.name,
                 calories: Math.round(parsed.calories),
                 protein: Math.round(parsed.protein),
                 carbs: Math.round(parsed.carbs),
                 fat: Math.round(parsed.fat)
             };
+
+            // Validace rozumných hodnot - jídlo musí mít alespoň nějaké kalorie
+            if (result.calories < 5) {
+                console.warn('Calories too low, likely not food:', result);
+                return null;
+            }
+
+            // Kontrola, že aspoň jedna makroživina je nenulová
+            if (result.protein === 0 && result.carbs === 0 && result.fat === 0) {
+                console.warn('All macros are zero, likely not food:', result);
+                return null;
+            }
+
+            return result;
         }
 
         console.log('No JSON found, trying text parsing');
@@ -455,6 +469,13 @@ function parseNutritionData(aiResponse) {
         };
 
         console.log('Parsed from text:', result);
+
+        // Validace rozumných hodnot
+        if (result.calories < 5) {
+            console.warn('Calories too low, likely not food:', result);
+            return null;
+        }
+
         return result;
     } catch (error) {
         console.error('Parsing error:', error);
@@ -536,7 +557,17 @@ async function analyzeText() {
 
 Jídlo: ${text}
 
-Vrať POUZE validní JSON, bez dalšího textu. Pokud je popis vágní, udělej kvalifikovaný odhad.`;
+DŮLEŽITÉ - Odhad velikosti:
+- Pokud je uvedeno množství (gramy, ml, kusy), použij ho přesně
+- Pokud není uvedeno množství, předpokládej standardní porci:
+  * Maso/ryba: ~150g
+  * Příloha (rýže, brambory, těstoviny): ~200g vařené
+  * Zelenina: ~150g
+  * Pečivo: 1 kus = ~50-70g
+  * Jogurt: ~150g
+  * Ovoce: střední kus ~100-150g
+
+Vrať POUZE validní JSON, bez dalšího textu.`;
 
     try {
         const response = await callGeminiAPI(prompt);
@@ -551,10 +582,10 @@ Vrať POUZE validní JSON, bez dalšího textu. Pokud je popis vágní, udělej 
 
         console.log('API Response:', response);
         const nutritionData = parseNutritionData(response);
-        
+
         if (!nutritionData) {
             console.error('Failed to parse nutrition data');
-            alert('Nepodařilo se analyzovat jídlo. Formát odpovědi není správný.');
+            alert('❌ Nerozpoznané jídlo\n\nText nebyl rozpoznán jako jídlo nebo nemá dostatečné nutriční hodnoty.\n\nZkuste:\n• Popsat jídlo konkrétněji\n• Uvést množství (např. "100g kuřecího masa")\n• Zadat jiné jídlo');
             return;
         }
 
@@ -593,7 +624,19 @@ async function analyzePhoto() {
     const preview = document.getElementById('photoPreview');
     preview.innerHTML = `<img src="${base64}" alt="Preview">`;
 
-    const prompt = `Analyzuj jídlo na této fotografii a vrať nutriční hodnoty ve formátu JSON:
+    const prompt = `Analyzuj jídlo na této fotografii a vrať nutriční hodnoty ve formátu JSON.
+
+DŮLEŽITÉ - Odhad velikosti porce:
+1. Porovnej jídlo s viditelným nádobím (talíř ~25cm, miska ~15cm, hrnek ~8cm průměr)
+2. Využij viditelné příbory (lžíce ~15cm, vidlička ~18cm, nůž ~20cm)
+3. Porovnej s běžnými předměty v okolí (telefon, ruka, stůl)
+4. Použij standardní velikosti porcí (např. kuřecí prsa ~150g, hamburger ~120g, porce rýže ~200g vařené)
+5. Odhadni objem jídla podle toho, kolik místa zabírá na talíři/v misce
+6. Zohledni vrstvení a hloubku jídla, ne jen plochu
+
+Pokud je velikost nejasná, preferuj konzervativní odhad běžné porce.
+
+Vrať ve formátu JSON:
 {
   "name": "název jídla/jídel na fotce",
   "calories": celkové kalorie v kcal (číslo),
@@ -615,7 +658,7 @@ Vrať POUZE validní JSON, bez dalšího textu. Pokud je na fotce více jídel, 
             photoInput.value = '';
             preview.innerHTML = '';
         } else {
-            alert('Nepodařilo se analyzovat fotografii. Zkuste to znovu.');
+            alert('❌ Nerozpoznané jídlo na fotografii\n\nNa fotce nebylo rozpoznáno jídlo s dostatečnými nutričními hodnotami.\n\nZkuste:\n• Vyfotit jídlo zblízka a ostře\n• Zajistit dobré osvětlení\n• Vyfotit jednodušší jídlo\n• Použít textový vstup místo fotky');
         }
     }
 }
@@ -673,7 +716,7 @@ async function startVoiceRecognition() {
 
             // Zobrazit info o nahrávce
             const sizeKB = (audioBlob.size / 1024).toFixed(2);
-            document.getElementById('voiceInput').value = `Nahrávka dokončena (${sizeKB} KB). Automaticky zpracovávám...`;
+            console.log(`Nahrávka dokončena (${sizeKB} KB). Automaticky zpracovávám...`);
 
             voiceBtn.textContent = '🎤 Nahrát znovu';
             voiceBtn.style.background = '';
@@ -739,6 +782,16 @@ async function analyzeVoice() {
   "fat": gramy tuků (číslo)
 }
 
+DŮLEŽITÉ - Odhad velikosti z mluveného slova:
+- Pozorně poslouchej zmínky o množství (gramy, kusy, porce, talíř, miska)
+- Pokud je řečeno množství, použij ho přesně
+- Pokud není uvedeno množství, předpokládaj standardní porci:
+  * Maso/ryba: ~150g
+  * Příloha (rýže, brambory, těstoviny): ~200g vařené
+  * Zelenina: ~150g
+  * "Velká porce" = +50%, "Malá porce" = -30%
+  * "Celý talíř" = běžná porce, "Půl talíře" = poloviční porce
+
 Vrať POUZE validní JSON, bez dalšího textu.`;
 
         // Zavolat Gemini API s audio
@@ -750,11 +803,12 @@ Vrať POUZE validní JSON, bez dalšího textu.`;
             const nutritionData = parseNutritionData(response);
             if (nutritionData) {
                 addMeal(nutritionData);
-                document.getElementById('voiceInput').value = '';
                 audioBlob = null;
                 document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
             } else {
-                alert('Nepodařilo se analyzovat jídlo. Zkuste to znovu.');
+                alert('❌ Nerozpoznané jídlo v hlasovém záznamu\n\nHlasový záznam nebyl rozpoznán jako popis jídla s dostatečnými nutričními hodnotami.\n\nZkuste:\n• Mluvit jasněji a pomaleji\n• Popsat jídlo konkrétněji s množstvím\n• Nahrát v tišším prostředí\n• Použít textový vstup místo hlasu');
+                audioBlob = null;
+                document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
             }
         }
     } catch (error) {
@@ -878,7 +932,6 @@ function updateSummary() {
         updateMacroBox('fat', totals.fat, dailyGoals.fat);
     } else {
         // Bez cílů, zobrazit základní info
-        document.getElementById('caloriesPercentage').textContent = '-';
         document.getElementById('caloriesGoalValue').textContent = '?';
         document.getElementById('caloriesProgressFill').style.width = '0%';
 
@@ -907,6 +960,12 @@ function updateMacroBox(type, current, goal) {
     if (totalElement) totalElement.textContent = current;
     if (percentElement) percentElement.textContent = percent + '%';
     if (goalElement) goalElement.textContent = `z ${goal}g`;
+
+    // Nastavit výšku rising fill pozadí
+    const macroBox = document.querySelector(`.macro-box[data-macro="${type}"]`);
+    if (macroBox) {
+        macroBox.style.setProperty('--fill-height', percent + '%');
+    }
 }
 
 // === UTILITY FUNCTIONS ===
