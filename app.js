@@ -1223,8 +1223,6 @@ function isSelectedDateToday() {
  * Change selected date
  */
 function changeDate(direction) {
-    console.log('🔄 changeDate START - direction:', direction, 'selectedDate:', AppState.selectedDate);
-
     const currentDate = getSelectedDate();
     currentDate.setDate(currentDate.getDate() + direction);
 
@@ -1240,35 +1238,27 @@ function changeDate(direction) {
     const todayDay = String(todayDate.getDate()).padStart(2, '0');
     const today = `${todayYear}-${todayMonth}-${todayDay}`;
 
-    console.log('📅 New date:', newDateString, 'Today:', today);
-
     // Don't allow future dates
     if (newDateString > today) {
-        console.log('❌ BLOCKED - future date');
         return;
     }
 
     // Set to new date (or null if it's today)
     if (newDateString === today) {
         AppState.selectedDate = null;
-        console.log('✅ Set to TODAY (null)');
     } else {
         AppState.selectedDate = newDateString;
-        console.log('✅ Set to:', newDateString);
     }
 
     updateSelectedDateDisplay();
     setupMealsListener();
     updateNavigationButtons();
-    console.log('🔄 changeDate END');
 }
 
 /**
  * Go to previous day
  */
 function goToPreviousDay() {
-    console.log('⬅️ goToPreviousDay called');
-    console.trace('Call stack:');
     changeDate(-1);
 }
 
@@ -1276,8 +1266,6 @@ function goToPreviousDay() {
  * Go to next day
  */
 function goToNextDay() {
-    console.log('➡️ goToNextDay called');
-    console.trace('Call stack:');
     changeDate(1);
 }
 
