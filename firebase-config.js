@@ -21,6 +21,16 @@ try {
     app = firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
     db = firebase.firestore();
+
+    // Set persistence to LOCAL to remember user across sessions
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => {
+            console.log('✅ Firebase Auth persistence set to LOCAL');
+        })
+        .catch((error) => {
+            console.error('❌ Error setting persistence:', error);
+        });
+
     console.log('✅ Firebase initialized successfully');
 } catch (error) {
     console.error('❌ Firebase initialization error:', error);
