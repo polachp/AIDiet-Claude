@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Gemini API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .model-list {
+            margin-top: 10px;
+        }
+
+        .model-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-left: 3px solid #4CAF50;
+            border-radius: 4px;
+        }
+
+        .model-name {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Gemini API</h1>
+        <p style="margin-bottom: 20px; color: #666;">
+            Tato stránka otestuje váš API klíč a zobrazí dostupné modely.
+        </p>
+
+        <div class="form-group">
+            <label for="apiKey">Gemini API klíč:</label>
+            <input type="password" id="apiKey" placeholder="Zadejte váš API klíč">
+            <small style="display: block; margin-top: 5px; color: #999;">
+                Získejte na <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>
+            </small>
+        </div>
+
+        <button onclick="testListModels()">📋 Zobrazit dostupné modely</button>
+        <button onclick="testSimplePrompt()">💬 Test jednoduchého promptu</button>
+        <button onclick="clearResults()">🗑️ Vyčistit výsledky</button>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Testování...</p>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function getApiKey() {
+            const key = document.getElementById('apiKey').value.trim();
+            if (!key) {
+                alert('Zadejte prosím API klíč');
+                return null;
+            }
+            return key;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testListModels() {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            clearResults();
+            showLoading(true);
+
+            try {
+                // Test v1 API
+                addResult('🔍 Testování v1 API endpoint...', 'info');
+                const url = `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${data.error?.message || 'Neznámá chyba'}`);
+                }
+
+                // Zobrazit dostupné modely
+                if (data.models && data.models.length > 0) {
+                    addResult(`✅ Nalezeno ${data.models.length} modelů:`, 'success');
+
+                    const modelsDiv = document.createElement('div');
+                    modelsDiv.className = 'result success';
+                    modelsDiv.innerHTML = '<div class="model-list">' +
+                        data.models.map(model => `
+                            <div class="model-item">
+                                <div class="model-name">${model.name}</div>
+                                <div style="font-size: 0.9em; color: #666;">
+                                    ${model.displayName || 'N/A'}<br>
+                                    Podporované metody: ${model.supportedGenerationMethods?.join(', ') || 'N/A'}
+                                </div>
+                            </div>
+                        `).join('') +
+                        '</div>';
+
+                    document.getElementById('results').appendChild(modelsDiv);
+
+                    // Najít modely podporující generateContent
+                    const contentModels = data.models.filter(m =>
+                        m.supportedGenerationMethods?.includes('generateContent')
+                    );
+
+                    if (contentModels.length > 0) {
+                        addResult(
+                            `💡 Doporučené modely pro použití:\n${contentModels.map(m => m.name).join('\n')}`,
+                            'info'
+                        );
+                    }
+                } else {
+                    addResult('⚠️ Nenalezeny žádné modely', 'error');
+                }
+
+            } catch (error) {
+                addResult(`❌ Chyba: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function testSimplePrompt() {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            clearResults();
+            showLoading(true);
+
+            // Zkusit několik různých modelů
+            const modelsToTest = [
+                'models/gemini-1.5-flash',
+                'models/gemini-1.5-pro',
+                'models/gemini-pro',
+                'gemini-1.5-flash',
+                'gemini-1.5-pro',
+                'gemini-pro'
+            ];
+
+            for (const modelName of modelsToTest) {
+                try {
+                    addResult(`🧪 Testování modelu: ${modelName}`, 'info');
+
+                    const url = `https://generativelanguage.googleapis.com/v1/${modelName}:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: 'Ahoj, řekni jen "Funguje!" a nic víc.' }]
+                            }]
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Žádná odpověď';
+                        addResult(`✅ Model ${modelName} FUNGUJE!\nOdpověď: ${text}`, 'success');
+                        break; // Našli jsme fungující model
+                    } else {
+                        addResult(`❌ Model ${modelName} selhal: ${data.error?.message}`, 'error');
+                    }
+
+                } catch (error) {
+                    addResult(`❌ Model ${modelName} chyba: ${error.message}`, 'error');
+                }
+            }
+
+            showLoading(false);
+        }
+    </script>
+</body>
+</html>

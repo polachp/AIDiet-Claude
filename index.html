@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Diet - Sledování kalorií</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍽️ AI Diet</h1>
+            <p>Sledování kalorií s pomocí AI</p>
+            <button onclick="toggleSettings()" class="settings-btn" id="settingsBtn">⚙️ Nastavení</button>
+        </header>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-overlay" onclick="toggleSettings()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>⚙️ Nastavení</h2>
+                    <button class="modal-close" onclick="toggleSettings()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <!-- API klíč -->
+                    <div id="apiKeySection">
+                        <div class="form-group">
+                            <label for="apiKey">Gemini API klíč:</label>
+                            <input type="password" id="apiKey" placeholder="Zadejte váš Gemini API klíč">
+                            <button onclick="saveApiKey()">💾 Uložit klíč</button>
+                            <small>Získejte zdarma na <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                        </div>
+                    </div>
+
+                    <!-- Uživatelské údaje -->
+                    <div class="user-data-section" id="userDataSection">
+                        <h3 style="margin-top: 16px; margin-bottom: 12px; color: var(--text-primary); font-size: 1.1em; font-weight: 600;">Osobní údaje (pro výpočet denního příjmu)</h3>
+                        <div class="user-data-grid">
+                            <div class="form-group">
+                                <label for="userAge">Věk (roky):</label>
+                                <input type="number" id="userAge" placeholder="25" min="10" max="120">
+                            </div>
+                            <div class="form-group">
+                                <label for="userGender">Pohlaví:</label>
+                                <select id="userGender">
+                                    <option value="male">Muž</option>
+                                    <option value="female">Žena</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="userWeight">Váha (kg):</label>
+                                <input type="number" id="userWeight" placeholder="70" min="30" max="300" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="userHeight">Výška (cm):</label>
+                                <input type="number" id="userHeight" placeholder="175" min="100" max="250">
+                            </div>
+                            <div class="form-group">
+                                <label for="userActivity">Aktivita:</label>
+                                <select id="userActivity">
+                                    <option value="1.2">Sedavé zaměstnání</option>
+                                    <option value="1.375">Lehká aktivita (1-3x týdně)</option>
+                                    <option value="1.55" selected>Středně aktivní (3-5x týdně)</option>
+                                    <option value="1.725">Velmi aktivní (6-7x týdně)</option>
+                                    <option value="1.9">Extra aktivní (2x denně)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="saveUserData()" class="btn-primary" style="margin-top: 12px;">💾 Uložit osobní údaje</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vstupní formulář -->
+        <section class="input-section">
+            <h2>Přidat jídlo</h2>
+
+            <!-- Tab menu -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('text')">📝 Text</button>
+                <button class="tab-btn" onclick="switchTab('photo')">📷 Foto</button>
+                <button class="tab-btn" onclick="switchTab('voice')">🎤 Hlas</button>
+            </div>
+
+            <!-- Textový vstup -->
+            <div id="textTab" class="tab-content active">
+                <div class="form-group">
+                    <input type="text" id="textInput" placeholder="Napište co jste snědli, např: 'dva rohlíky s máslem a šunkou, jogurt'" />
+                    <small style="display: block; margin-top: 8px; color: var(--text-secondary); font-size: 0.9em;">Stiskněte Enter pro analýzu</small>
+                </div>
+            </div>
+
+            <!-- Foto vstup -->
+            <div id="photoTab" class="tab-content">
+                <div class="form-group">
+                    <input type="file" id="photoInput" accept="image/*" capture="environment">
+                    <small style="display: block; margin-top: 8px; color: var(--text-secondary); font-size: 0.9em;">Foto se automaticky analyzuje po výběru</small>
+                    <div id="photoPreview" class="photo-preview"></div>
+                    <div id="photoLoading" class="inline-loading" style="display: none;">
+                        <div class="spinner-small"></div>
+                        <span>Analyzuji fotografii...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hlasový vstup -->
+            <div id="voiceTab" class="tab-content">
+                <div class="form-group">
+                    <textarea id="voiceInput" placeholder="1. Klikněte 'Začít nahrávat' a nadiktujte co jste snědli&#10;2. Klikněte 'Zastavit' pro ukončení&#10;Nahrávka se automaticky zpracuje po zastavení" rows="3" readonly></textarea>
+                    <button onclick="startVoiceRecognition()" id="voiceBtn" class="btn-primary">🎤 Začít nahrávat</button>
+                    <div id="voiceLoading" class="inline-loading" style="display: none;">
+                        <div class="spinner-small"></div>
+                        <span>Zpracovávám hlasový vstup...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading indicator -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzuji jídlo...</p>
+            </div>
+        </section>
+
+        <!-- Denní přehled -->
+        <section class="daily-summary">
+            <h2>Dnes - <span id="currentDate"></span></h2>
+
+            <!-- Celkové kalorie -->
+            <div class="calories-main">
+                <div class="calories-percentage" id="caloriesPercentage">0%</div>
+                <div class="calories-secondary">
+                    <span id="totalCalories">0</span> / <span id="caloriesGoalValue">2000</span> kcal
+                </div>
+                <div class="calories-progress-bar">
+                    <div class="calories-progress-fill" id="caloriesProgressFill"></div>
+                </div>
+            </div>
+
+            <!-- Makroživiny s kruhovými grafy -->
+            <div>
+                <h3 style="margin-bottom: 15px; color: var(--text-secondary); font-size: 1.1em;">Denní příjem makroživin</h3>
+                <div class="macros-grid">
+                    <!-- Bílkoviny -->
+                    <div class="macro-circle-card">
+                        <div class="circle-progress">
+                            <svg width="120" height="120">
+                                <circle class="circle-bg" cx="60" cy="60" r="52"></circle>
+                                <circle class="circle-progress-protein" id="proteinCircle" cx="60" cy="60" r="52"></circle>
+                            </svg>
+                            <div class="circle-text">
+                                <div class="circle-value" id="totalProtein">0g</div>
+                                <div class="circle-percent" id="proteinPercent">0%</div>
+                            </div>
+                        </div>
+                        <div class="circle-label">Bílkoviny</div>
+                        <div class="circle-goal" id="proteinGoal">z 0g</div>
+                    </div>
+
+                    <!-- Sacharidy -->
+                    <div class="macro-circle-card">
+                        <div class="circle-progress">
+                            <svg width="120" height="120">
+                                <circle class="circle-bg" cx="60" cy="60" r="52"></circle>
+                                <circle class="circle-progress-carbs" id="carbsCircle" cx="60" cy="60" r="52"></circle>
+                            </svg>
+                            <div class="circle-text">
+                                <div class="circle-value" id="totalCarbs">0g</div>
+                                <div class="circle-percent" id="carbsPercent">0%</div>
+                            </div>
+                        </div>
+                        <div class="circle-label">Sacharidy</div>
+                        <div class="circle-goal" id="carbsGoal">z 0g</div>
+                    </div>
+
+                    <!-- Tuky -->
+                    <div class="macro-circle-card">
+                        <div class="circle-progress">
+                            <svg width="120" height="120">
+                                <circle class="circle-bg" cx="60" cy="60" r="52"></circle>
+                                <circle class="circle-progress-fat" id="fatCircle" cx="60" cy="60" r="52"></circle>
+                            </svg>
+                            <div class="circle-text">
+                                <div class="circle-value" id="totalFat">0g</div>
+                                <div class="circle-percent" id="fatPercent">0%</div>
+                            </div>
+                        </div>
+                        <div class="circle-label">Tuky</div>
+                        <div class="circle-goal" id="fatGoal">z 0g</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seznam jídel -->
+        <section class="meals-section">
+            <h2>Seznam jídel</h2>
+            <div id="mealsList" class="meals-list">
+                <p class="empty-state">Zatím žádná jídla. Přidejte své první jídlo!</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "ai-diet",
+  "version": "1.0.0",
+  "description": "AI-powered calorie tracking web application",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve . -l 8000",
+    "deploy:netlify": "netlify deploy --prod",
+    "deploy:vercel": "vercel --prod"
+  },
+  "keywords": [
+    "ai",
+    "diet",
+    "calories",
+    "nutrition",
+    "gemini",
+    "web-app"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {}
+}
