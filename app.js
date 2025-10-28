@@ -1226,13 +1226,21 @@ function changeDate(direction) {
     console.log('🔄 changeDate START - direction:', direction, 'selectedDate:', AppState.selectedDate);
 
     const currentDate = getSelectedDate();
-    console.log('📅 Current date object:', currentDate.toISOString().split('T')[0]);
-
     currentDate.setDate(currentDate.getDate() + direction);
-    console.log('📅 After adding', direction, 'day(s):', currentDate.toISOString().split('T')[0]);
 
-    const newDateString = currentDate.toISOString().split('T')[0];
-    const today = new Date().toISOString().split('T')[0];
+    // Convert to YYYY-MM-DD using LOCAL time (not UTC)
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const newDateString = `${year}-${month}-${day}`;
+
+    const todayDate = new Date();
+    const todayYear = todayDate.getFullYear();
+    const todayMonth = String(todayDate.getMonth() + 1).padStart(2, '0');
+    const todayDay = String(todayDate.getDate()).padStart(2, '0');
+    const today = `${todayYear}-${todayMonth}-${todayDay}`;
+
+    console.log('📅 New date:', newDateString, 'Today:', today);
 
     // Don't allow future dates
     if (newDateString > today) {
