@@ -31,9 +31,6 @@ tmp/
 temp/
 nul
 
-dev-service-account.json
-prod-service-account.json
-
 # Firebase Admin SDK service accounts (CRITICAL - NEVER COMMIT!)
 *-service-account.json
 service-account-*.json
