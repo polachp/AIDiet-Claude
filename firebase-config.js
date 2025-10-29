@@ -66,6 +66,9 @@ try {
         });
 
     console.log('✅ Firebase initialized successfully');
+
+    // Show environment badge on DEV
+    showEnvironmentBadge();
 } catch (error) {
     console.error('❌ Firebase initialization error:', error);
 }
@@ -108,4 +111,26 @@ function getCurrentUser() {
 // Helper function to check if user is authenticated
 function isAuthenticated() {
     return currentUser !== null;
+}
+
+// Show environment badge on DEV environment
+function showEnvironmentBadge() {
+    const hostname = window.location.hostname;
+    const isDev = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    if (isDev) {
+        // Show badge on auth screen
+        const authBadge = document.getElementById('authEnvBadge');
+        if (authBadge) {
+            authBadge.textContent = 'DEV';
+            authBadge.style.display = 'inline-block';
+        }
+
+        // Show badge on main app (will be visible after login)
+        const mainBadge = document.getElementById('mainEnvBadge');
+        if (mainBadge) {
+            mainBadge.textContent = 'DEV';
+            mainBadge.style.display = 'inline-block';
+        }
+    }
 }

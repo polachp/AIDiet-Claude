@@ -143,6 +143,20 @@ header h1 {
     vertical-align: middle;
 }
 
+/* Environment Badge */
+.env-badge {
+    display: inline-block;
+    background: #FF3B30;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+
 /* Menu Button - iOS Style */
 .menu-btn {
     background: var(--bg-elevated);
@@ -1638,6 +1652,10 @@ button:disabled {
     .auth-form h2 {
         font-size: 20px;
         margin-bottom: var(--space-md);
+    }
+
+    .env-badge {
+        font-size: 14px !important;
     }
 
     /* iOS Safari bottom bar fix */
