@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Communication Style
+
+**⚠️ IMPORTANT: User prefers concise responses**
+
+- ✅ Be brief and to the point
+- ✅ Highlight critical info with **bold** or emojis
+- ✅ Skip verbose explanations unless asked
+- ✅ Use bullet points over paragraphs
+- ❌ Don't repeat information
+- ❌ Don't over-explain simple concepts
+
+Example:
+```
+❌ Bad: "I'm going to update the file. This will change the configuration
+        to use the new system. The reason we're doing this is because..."
+
+✅ Good: "Updating config to use new system."
+```
+
 ## Project Overview
 
 AI Diet is a multi-user web application for tracking calorie intake using **multiple AI providers** (Gemini, DeepSeek). Built with vanilla JavaScript, HTML, and CSS - no build tools required. Uses Firebase for authentication (Google OAuth + Email/Password) and cloud storage (Firestore). **Strategy Pattern** architecture for AI providers.
