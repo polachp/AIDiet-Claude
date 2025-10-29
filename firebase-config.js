@@ -1,9 +1,11 @@
 // Firebase Configuration and Initialization
 // Import the functions you need from the SDKs you need
 
-// Firebase configuration object
-// TODO: Replace with your actual Firebase project configuration
-const firebaseConfig = {
+// ==================== MULTI-ENVIRONMENT SETUP ====================
+// Automatically switches between DEV and PROD based on hostname
+
+// 🔴 PRODUCTION Firebase Config (Vercel, GitHub Pages, etc.)
+const firebaseConfigProd = {
   apiKey: "AIzaSyAin9KU4sDbyB_GxGC_yBf96CodHFgyna0",
   authDomain: "ai-diet-calories-count.firebaseapp.com",
   projectId: "ai-diet-calories-count",
@@ -11,6 +13,38 @@ const firebaseConfig = {
   messagingSenderId: "75977167085",
   appId: "1:75977167085:web:00db4ac5dd60318ed63ce4"
 };
+
+// 🟢 DEVELOPMENT Firebase Config (localhost)
+const firebaseConfigDev = {
+  apiKey: "AIzaSyBwVANu2ED26sEQxCOv2WahEmNK67MqijI",
+  authDomain: "ai-diet-dev.firebaseapp.com",
+  projectId: "ai-diet-dev",
+  storageBucket: "ai-diet-dev.firebasestorage.app",
+  messagingSenderId: "459622516977",
+  appId: "1:459622516977:web:19a42430f9d406d1c68150"
+};
+
+/**
+ * Get Firebase config based on current environment
+ * @returns {Object} Firebase configuration object
+ */
+function getFirebaseConfig() {
+  const hostname = window.location.hostname;
+
+  // Check if running on localhost
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    console.log('🟢 Environment: DEVELOPMENT (localhost)');
+    console.log('📦 Using Firebase project: ai-diet-dev');
+    return firebaseConfigDev;
+  } else {
+    console.log('🔴 Environment: PRODUCTION (' + hostname + ')');
+    console.log('📦 Using Firebase project: ai-diet-calories-count');
+    return firebaseConfigProd;
+  }
+}
+
+// Select appropriate config
+const firebaseConfig = getFirebaseConfig();
 
 // Initialize Firebase
 let app;

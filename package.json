@@ -19,5 +19,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "devDependencies": {}
+  "dependencies": {
+    "firebase-admin": "^13.5.0"
+  }
 }

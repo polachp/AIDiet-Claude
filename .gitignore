@@ -30,3 +30,17 @@ build/
 tmp/
 temp/
 nul
+
+dev-service-account.json
+prod-service-account.json
+
+# Firebase Admin SDK service accounts (CRITICAL - NEVER COMMIT!)
+*-service-account.json
+service-account-*.json
+
+# Migration scripts (contains sensitive paths)
+migrate-firestore.js
+
+# Firebase exports/backups
+firestore-backup/
+firebase-export-*/
