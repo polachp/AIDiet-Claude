@@ -69,7 +69,7 @@ Firebase Auth → User logged in
     defaultProvider: "gemini",
     providers: {
       gemini: { apiKey, models, apiVersions, capabilities },
-      deepseek: { apiKey, model, endpoint, capabilities }
+      deepseek: { apiKey, models, endpoint, temperature, maxTokens, capabilities }
     },
     fallbackOrder: ["gemini", "deepseek"]
   }

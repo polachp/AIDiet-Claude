@@ -20,7 +20,9 @@ class DeepSeekProvider extends BaseAIProvider {
             }
         });
 
-        this.model = config.model || 'deepseek-chat';
+        // Unified models array format (same as Gemini)
+        // Backward compatibility: pokud existuje config.model, použije se jako fallback
+        this.models = config.models || (config.model ? [config.model] : ['deepseek-chat']);
         this.endpoint = config.endpoint || 'https://api.deepseek.com/chat/completions';
         this.temperature = config.temperature || 0.7;
         this.maxTokens = config.maxTokens || 1024;
@@ -59,7 +61,8 @@ class DeepSeekProvider extends BaseAIProvider {
         }
 
         try {
-            console.log(`🔄 DeepSeek: Calling ${this.model}`);
+            const model = this.models[0]; // Use first model from array
+            console.log(`🔄 DeepSeek: Calling ${model}`);
 
             const response = await fetch(this.endpoint, {
                 method: 'POST',
@@ -68,7 +71,7 @@ class DeepSeekProvider extends BaseAIProvider {
                     'Authorization': `Bearer ${this.config.apiKey}`
                 },
                 body: JSON.stringify({
-                    model: this.model,
+                    model: model,
                     messages: [
                         {
                             role: 'system',
@@ -100,7 +103,7 @@ class DeepSeekProvider extends BaseAIProvider {
             }
 
             const content = data.choices[0].message.content;
-            console.log(`✅ DeepSeek: Success with ${this.model}`);
+            console.log(`✅ DeepSeek: Success with ${model}`);
             console.log(`   Tokens used: ${data.usage?.total_tokens || 'N/A'} (cached: ${data.usage?.prompt_cache_hit_tokens || 0})`);
 
             return content;
@@ -120,6 +123,7 @@ class DeepSeekProvider extends BaseAIProvider {
         }
 
         try {
+            const model = this.models[0]; // Use first model from array
             const response = await fetch(this.endpoint, {
                 method: 'POST',
                 headers: {
@@ -127,7 +131,7 @@ class DeepSeekProvider extends BaseAIProvider {
                     'Authorization': `Bearer ${this.config.apiKey}`
                 },
                 body: JSON.stringify({
-                    model: this.model,
+                    model: model,
                     messages: [
                         {
                             role: 'user',

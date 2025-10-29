@@ -101,7 +101,7 @@ providers: {
   deepseek: {
     enabled: true
     apiKey: "TVŮJ_DEEPSEEK_API_KLÍČ"  // Získej z https://platform.deepseek.com/api_keys
-    model: "deepseek-chat"
+    models: ["deepseek-chat"]  // Array formát (stejně jako Gemini)
     endpoint: "https://api.deepseek.com/chat/completions"
     temperature: 0.7
     maxTokens: 1024

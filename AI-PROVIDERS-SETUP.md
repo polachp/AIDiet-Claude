@@ -35,7 +35,7 @@ V Firestore vytvořte dokument s touto strukturou:
     "deepseek": {
       "enabled": false,
       "apiKey": "VÁŠ_DEEPSEEK_API_KLÍČ",
-      "model": "deepseek-chat",
+      "models": ["deepseek-chat"],
       "endpoint": "https://api.deepseek.com/chat/completions",
       "temperature": 0.7,
       "maxTokens": 1024,
@@ -125,7 +125,7 @@ await db.collection('config').doc('aiProviders').set({
 |------|-----|-------|
 | `enabled` | boolean | Zda je provider aktivní |
 | `apiKey` | string | API klíč pro DeepSeek |
-| `model` | string | Název modelu (výchozí: "deepseek-chat") |
+| `models` | array | Seznam modelů (výchozí: ["deepseek-chat"]) |
 | `endpoint` | string | API endpoint URL |
 | `temperature` | number | Teplota generování (0-2, výchozí: 0.7) |
 | `maxTokens` | number | Max délka odpovědi (výchozí: 1024) |
@@ -193,8 +193,10 @@ Pro úsporu nákladů používejte DeepSeek pro text a Gemini pro obrázky/audio
     "deepseek": {
       "enabled": true,
       "apiKey": "DEEPSEEK_KLÍČ",
-      "model": "deepseek-chat",
+      "models": ["deepseek-chat"],
       "endpoint": "https://api.deepseek.com/chat/completions",
+      "temperature": 0.7,
+      "maxTokens": 1024,
       "capabilities": {
         "text": true,
         "images": false,
