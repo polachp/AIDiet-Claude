@@ -7,7 +7,7 @@
 // =====================================
 const AppState = {
     meals: [],
-    apiKey: '',
+    aiConfig: null,
     currentUser: null,
     userData: null,
     dailyGoals: null,
@@ -33,7 +33,7 @@ async function initializeApp(user) {
 
     try {
         // Load data
-        await loadApiKeyFromFirestore();
+        await loadAIConfig();
         await loadUserDataFromFirestore();
 
         // Setup listeners
@@ -79,7 +79,7 @@ function clearAppData() {
     // Clear state
     Object.assign(AppState, {
         meals: [],
-        apiKey: '',
+        aiConfig: null,
         currentUser: null,
         userData: null,
         dailyGoals: null,
@@ -168,20 +168,134 @@ function setupEventListeners() {
 }
 
 // =====================================
-// API KEY MANAGEMENT
+// AI CONFIGURATION MANAGEMENT
 // =====================================
 
 /**
- * Load API key from Firestore
+ * Load AI configuration and initialize AI service
  */
-async function loadApiKeyFromFirestore() {
+async function loadAIConfig() {
     try {
-        AppState.apiKey = await getApiKeyFromFirestore();
-        console.log('✅ API key loaded from Firestore');
+        AppState.aiConfig = await getAIProvidersConfig();
+        await aiService.initialize(AppState.aiConfig);
+        console.log('✅ AI Service initialized');
+
+        // Populate UI with available providers
+        populateAIProvidersList();
     } catch (error) {
-        console.error('❌ Failed to load API key:', error);
+        console.error('❌ Failed to initialize AI Service:', error);
         throw error;
     }
+}
+
+/**
+ * Populate AI providers list in settings
+ */
+function populateAIProvidersList() {
+    const providersList = document.getElementById('aiProvidersList');
+    if (!providersList) return;
+
+    const providers = aiService.getAvailableProviders();
+
+    if (providers.length === 0) {
+        providersList.innerHTML = '<p style="color: var(--text-secondary);">Žádný AI provider není dostupný</p>';
+        return;
+    }
+
+    providersList.innerHTML = providers.map(provider => {
+        const caps = provider.capabilities;
+        const warnings = [];
+
+        if (!caps.images) warnings.push('📷 Nepodporuje fotky');
+        if (!caps.audio) warnings.push('🎤 Nepodporuje audio');
+
+        const warningText = warnings.length > 0
+            ? `<div style="font-size: 0.85em; color: #ff9800; margin-top: 4px;">${warnings.join(', ')}</div>`
+            : '';
+
+        return `
+            <label style="display: flex; align-items: flex-start; padding: 12px; background: var(--bg-secondary); border-radius: 8px; cursor: pointer; border: 2px solid ${provider.isDefault ? 'var(--primary-color)' : 'transparent'};">
+                <input
+                    type="radio"
+                    name="aiProvider"
+                    value="${provider.name}"
+                    ${provider.isDefault ? 'checked' : ''}
+                    onchange="selectAIProvider('${provider.name}')"
+                    style="margin-top: 2px; margin-right: 12px;"
+                />
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-primary);">
+                        ${provider.displayName}
+                        ${provider.isDefault ? '<span style="font-size: 0.8em; color: var(--primary-color); margin-left: 8px;">✓ Výchozí</span>' : ''}
+                    </div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary); margin-top: 4px;">
+                        ${caps.text ? '📝' : ''}
+                        ${caps.images ? '📷' : ''}
+                        ${caps.audio ? '🎤' : ''}
+                    </div>
+                    ${warningText}
+                </div>
+            </label>
+        `;
+    }).join('');
+
+    // Show capabilities of default provider
+    const defaultProvider = providers.find(p => p.isDefault);
+    if (defaultProvider) {
+        updateProviderCapabilities(defaultProvider.capabilities);
+    }
+}
+
+/**
+ * Select AI provider
+ */
+function selectAIProvider(providerName) {
+    try {
+        aiService.setDefaultProvider(providerName);
+
+        // Update capabilities display
+        const providers = aiService.getAvailableProviders();
+        const selected = providers.find(p => p.name === providerName);
+        if (selected) {
+            updateProviderCapabilities(selected.capabilities);
+        }
+
+        // Update config in Firestore
+        updateDefaultProvider(providerName).catch(error => {
+            console.error('Failed to save provider preference:', error);
+        });
+
+        console.log(`✅ Změněn AI provider na: ${providerName}`);
+
+        // Show notification
+        alert(`AI provider změněn na ${providerName}`);
+    } catch (error) {
+        console.error('Error selecting provider:', error);
+        alert(`Chyba při změně providera: ${error.message}`);
+    }
+}
+
+/**
+ * Update provider capabilities display
+ */
+function updateProviderCapabilities(capabilities) {
+    const capabilitiesDiv = document.getElementById('providerCapabilities');
+    const capText = document.getElementById('capText');
+    const capImages = document.getElementById('capImages');
+    const capAudio = document.getElementById('capAudio');
+
+    if (!capabilitiesDiv) return;
+
+    capabilitiesDiv.style.display = 'block';
+
+    capText.style.opacity = capabilities.text ? '1' : '0.3';
+    capText.style.textDecoration = capabilities.text ? 'none' : 'line-through';
+
+    capImages.style.opacity = capabilities.images ? '1' : '0.3';
+    capImages.style.textDecoration = capabilities.images ? 'none' : 'line-through';
+
+    capAudio.style.opacity = capabilities.audio ? '1' : '0.3';
+    capAudio.style.textDecoration = capabilities.audio ? 'none' : 'line-through';
 }
 
 // =====================================
@@ -411,230 +525,13 @@ function displayMeals() {
     }).join('');
 }
 
-// =====================================
-// GEMINI API INTEGRATION
-// =====================================
-
-/**
- * Call Gemini API with text or image
- */
-async function callGeminiAPI(prompt, imageBase64 = null) {
-    if (!AppState.apiKey) {
-        alert('API klíč není dostupný. Kontaktujte administrátora.');
-        return null;
-    }
-
-    const modelsToTry = [
-        'gemini-2.5-flash',
-        'gemini-2.5-flash-lite'
-    ];
-
-    let requestBody;
-
-    if (imageBase64) {
-        requestBody = {
-            contents: [{
-                parts: [
-                    { text: prompt },
-                    {
-                        inline_data: {
-                            mime_type: "image/jpeg",
-                            data: imageBase64
-                        }
-                    }
-                ]
-            }]
-        };
-    } else {
-        requestBody = {
-            contents: [{
-                parts: [{ text: prompt }]
-            }]
-        };
-    }
-
-    const apiVersions = ['v1beta', 'v1'];
-    let lastError = null;
-
-    for (const modelName of modelsToTry) {
-        for (const apiVersion of apiVersions) {
-            try {
-                console.log(`Trying ${apiVersion} model: ${modelName}`);
-                const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${AppState.apiKey}`;
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    lastError = errorData.error?.message || 'Neznámá chyba';
-                    console.warn(`${apiVersion}/models/${modelName} failed:`, lastError);
-                    continue;
-                }
-
-                const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-                console.log(`✅ Success with ${apiVersion}/models/${modelName}`);
-                return text;
-
-            } catch (error) {
-                lastError = error.message;
-                console.warn(`${apiVersion}/models/${modelName} error:`, error.message);
-            }
-        }
-    }
-
-    console.error('All models failed. Last error:', lastError);
-    alert(`Chyba při volání API: ${lastError}\n\nKontaktujte administrátora.`);
-    return null;
-}
-
-/**
- * Call Gemini API with audio
- */
-async function callGeminiAPIWithAudio(prompt, audioBase64) {
-    if (!AppState.apiKey) {
-        alert('API klíč není dostupný. Kontaktujte administrátora.');
-        return null;
-    }
-
-    const modelsToTry = [
-        'gemini-2.5-flash',
-        'gemini-2.5-flash-lite'
-    ];
-
-    const requestBody = {
-        contents: [{
-            parts: [
-                { text: prompt },
-                {
-                    inline_data: {
-                        mime_type: "audio/webm",
-                        data: audioBase64
-                    }
-                }
-            ]
-        }]
-    };
-
-    const apiVersions = ['v1beta', 'v1'];
-    let lastError = null;
-
-    for (const modelName of modelsToTry) {
-        for (const apiVersion of apiVersions) {
-            try {
-                console.log(`Trying ${apiVersion} model: ${modelName} with audio`);
-                const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${AppState.apiKey}`;
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    lastError = errorData.error?.message || 'Neznámá chyba';
-                    console.warn(`${apiVersion}/models/${modelName} failed:`, lastError);
-                    continue;
-                }
-
-                const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-                console.log(`✅ Success with ${apiVersion}/models/${modelName} (audio)`);
-                return text;
-
-            } catch (error) {
-                lastError = error.message;
-                console.warn(`${apiVersion}/models/${modelName} error:`, error.message);
-            }
-        }
-    }
-
-    console.error('All audio models failed. Last error:', lastError);
-    alert(`Chyba při zpracování audio: ${lastError}`);
-    return null;
-}
-
-/**
- * Parse nutrition data from AI response
- */
-function parseNutritionData(aiResponse) {
-    try {
-        console.log('Parsing AI response:', aiResponse);
-
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            console.log('Found JSON in response:', jsonMatch[0]);
-            const parsed = JSON.parse(jsonMatch[0]);
-
-            if (!parsed.name || typeof parsed.calories !== 'number' ||
-                typeof parsed.protein !== 'number' ||
-                typeof parsed.carbs !== 'number' ||
-                typeof parsed.fat !== 'number') {
-                console.error('Invalid data structure:', parsed);
-                return null;
-            }
-
-            const result = {
-                name: parsed.name,
-                calories: Math.round(parsed.calories),
-                protein: Math.round(parsed.protein),
-                carbs: Math.round(parsed.carbs),
-                fat: Math.round(parsed.fat)
-            };
-
-            if (result.calories < 5) {
-                console.warn('Calories too low, likely not food:', result);
-                return null;
-            }
-
-            if (result.protein === 0 && result.carbs === 0 && result.fat === 0) {
-                console.warn('All macros are zero, likely not food:', result);
-                return null;
-            }
-
-            return result;
-        }
-
-        console.log('No JSON found, trying text parsing');
-        const lines = aiResponse.toLowerCase();
-        const result = {
-            name: "Analyzované jídlo",
-            calories: Math.round(parseInt(lines.match(/(\d+)\s*(kcal|kalori)/)?.[1] || '0')),
-            protein: Math.round(parseInt(lines.match(/bílkovin[ya]?:?\s*(\d+)/)?.[1] || '0')),
-            carbs: Math.round(parseInt(lines.match(/sacharid[yů]?:?\s*(\d+)/)?.[1] || '0')),
-            fat: Math.round(parseInt(lines.match(/tuk[yů]?:?\s*(\d+)/)?.[1] || '0'))
-        };
-
-        console.log('Parsed from text:', result);
-
-        if (result.calories < 5) {
-            console.warn('Calories too low, likely not food:', result);
-            return null;
-        }
-
-        return result;
-    } catch (error) {
-        console.error('Parsing error:', error);
-        console.error('Original response:', aiResponse);
-        return null;
-    }
-}
 
 // =====================================
 // TEXT INPUT ANALYSIS
 // =====================================
 
 /**
- * Analyze text input
+ * Analyze text input using new TextAnalyzer
  */
 async function analyzeText() {
     if (AppState.isProcessing) return;
@@ -650,58 +547,22 @@ async function analyzeText() {
     AppState.isProcessing = true;
     showLoading(true);
 
-    const prompt = `Analyzuj následující jídlo a vrať přesné nutriční hodnoty ve formátu JSON:
-{
-  "name": "název jídla",
-  "calories": celkové kalorie v kcal (číslo),
-  "protein": gramy bílkovin (číslo),
-  "carbs": gramy sacharidů (číslo),
-  "fat": gramy tuků (číslo)
-}
-
-Jídlo: ${text}
-
-DŮLEŽITÉ - Odhad velikosti:
-- Pokud je uvedeno množství (gramy, ml, kusy), použij ho přesně
-- Pokud není uvedeno množství, předpokládej standardní porci:
-  * Maso/ryba: ~150g
-  * Příloha (rýže, brambory, těstoviny): ~200g vařené
-  * Zelenina: ~150g
-  * Pečivo: 1 kus = ~50-70g
-  * Jogurt: ~150g
-  * Ovoce: střední kus ~100-150g
-
-Vrať POUZE validní JSON, bez dalšího textu.`;
-
     try {
-        const response = await callGeminiAPI(prompt);
-        showLoading(false);
-        AppState.isProcessing = false;
+        const textAnalyzer = new TextAnalyzer();
+        const nutritionData = await textAnalyzer.analyze(text);
 
-        if (!response) {
-            console.error('No response from API');
-            alert('Nepodařilo se získat odpověď z API.');
-            return;
+        if (nutritionData) {
+            await addMeal(nutritionData);
+            textInput.value = '';
+        } else {
+            alert('Nepodařilo se analyzovat jídlo. Zkuste to prosím znovu.');
         }
-
-        console.log('API Response:', response);
-        const nutritionData = parseNutritionData(response);
-
-        if (!nutritionData) {
-            console.error('Failed to parse nutrition data');
-            alert('❌ Nerozpoznané jídlo\n\nZkuste popsat jídlo konkrétněji.');
-            return;
-        }
-
-        console.log('Adding meal:', nutritionData);
-        addMeal(nutritionData);
-        textInput.value = '';
-
     } catch (error) {
-        console.error('Error in analyzeText:', error);
-        alert('Došlo k chybě při analýze: ' + error.message);
-        showLoading(false);
+        console.error('❌ Text analysis error:', error);
+        alert(`Chyba při analýze: ${error.message}`);
+    } finally {
         AppState.isProcessing = false;
+        showLoading(false);
     }
 }
 
@@ -710,7 +571,7 @@ Vrať POUZE validní JSON, bez dalšího textu.`;
 // =====================================
 
 /**
- * Analyze photo input
+ * Analyze photo input using new PhotoAnalyzer
  */
 async function analyzePhoto() {
     if (AppState.isProcessing) return;
@@ -719,72 +580,32 @@ async function analyzePhoto() {
     const file = photoInput.files[0];
 
     if (!file) {
-        alert('Vyberte prosím fotografii');
+        alert('Vyberte prosím fotografii jídla');
         return;
     }
 
     AppState.isProcessing = true;
-    showInlineLoading('photoLoading', true);
+    showLoading(true);
 
     try {
-        const base64 = await fileToBase64(file);
-        const base64Data = base64.split(',')[1];
+        const photoAnalyzer = new PhotoAnalyzer();
+        const nutritionData = await photoAnalyzer.analyze(file);
 
-        const preview = document.getElementById('photoPreview');
-        preview.innerHTML = `<img src="${base64}" alt="Preview">`;
-
-        const prompt = `Analyzuj jídlo na této fotografii a vrať nutriční hodnoty ve formátu JSON.
-
-DŮLEŽITÉ - Odhad velikosti porce:
-1. Porovnej jídlo s viditelným nádobím (talíř ~25cm, miska ~15cm)
-2. Využij viditelné příbory (lžíce ~15cm, vidlička ~18cm)
-3. Použij standardní velikosti porcí (např. kuřecí prsa ~150g)
-4. Odhadni objem jídla podle toho, kolik místa zabírá na talíři
-
-Vrať ve formátu JSON:
-{
-  "name": "název jídla/jídel na fotce",
-  "calories": celkové kalorie v kcal (číslo),
-  "protein": gramy bílkovin (číslo),
-  "carbs": gramy sacharidů (číslo),
-  "fat": gramy tuků (číslo)
-}
-
-Vrať POUZE validní JSON, bez dalšího textu. Pokud je na fotce více jídel, sečti je.`;
-
-        const response = await callGeminiAPI(prompt, base64Data);
-        showInlineLoading('photoLoading', false);
-        AppState.isProcessing = false;
-
-        if (response) {
-            const nutritionData = parseNutritionData(response);
-            if (nutritionData) {
-                addMeal(nutritionData);
-                photoInput.value = '';
-                preview.innerHTML = '';
-            } else {
-                alert('❌ Nerozpoznané jídlo na fotografii\n\nZkuste vyfotit jídlo zblízka a ostře.');
-            }
+        if (nutritionData) {
+            await addMeal(nutritionData);
+            photoInput.value = '';
+        } else {
+            alert('Nepodařilo se analyzovat fotografii. Zkuste to prosím znovu.');
         }
     } catch (error) {
-        console.error('Error in analyzePhoto:', error);
-        alert('Chyba při analýze fotografie: ' + error.message);
-        showInlineLoading('photoLoading', false);
+        console.error('❌ Photo analysis error:', error);
+        alert(`Chyba při analýze fotografie: ${error.message}`);
+    } finally {
         AppState.isProcessing = false;
+        showLoading(false);
     }
 }
 
-/**
- * Convert file to base64
- */
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-}
 
 // =====================================
 // VOICE INPUT ANALYSIS
@@ -867,78 +688,40 @@ async function startVoiceRecognition() {
 }
 
 /**
- * Analyze voice input
+ * Analyze voice input using new VoiceAnalyzer
  */
 async function analyzeVoice() {
-    if (AppState.isProcessing) return;
-
     if (!AppState.audioBlob) {
-        alert('Nejprve nahrajte hlasový vstup');
+        alert('Nejprve nahrajte audio');
         return;
     }
 
+    if (AppState.isProcessing) return;
+
     AppState.isProcessing = true;
-    showInlineLoading('voiceLoading', true);
+    showLoading(true);
 
     try {
-        const audioBase64 = await blobToBase64(AppState.audioBlob);
-        const audioBase64Data = audioBase64.split(',')[1];
+        const voiceAnalyzer = new VoiceAnalyzer();
+        const nutritionData = await voiceAnalyzer.analyze(AppState.audioBlob);
 
-        const prompt = `Poslouchej tento audio záznam a:
-1. Přepiš co říkám
-2. Analyzuj popsané jídlo
-3. Vrať nutriční hodnoty ve formátu JSON:
-
-{
-  "name": "název jídla",
-  "calories": celkové kalorie v kcal (číslo),
-  "protein": gramy bílkovin (číslo),
-  "carbs": gramy sacharidů (číslo),
-  "fat": gramy tuků (číslo)
-}
-
-DŮLEŽITÉ - Odhad velikosti z mluveného slova:
-- Pozorně poslouchej zmínky o množství (gramy, kusy, porce)
-- Pokud je řečeno množství, použij ho přesně
-- Pokud není uvedeno, předpokládaj standardní porci
-
-Vrať POUZE validní JSON, bez dalšího textu.`;
-
-        const response = await callGeminiAPIWithAudio(prompt, audioBase64Data);
-        showInlineLoading('voiceLoading', false);
-        AppState.isProcessing = false;
-
-        if (response) {
-            const nutritionData = parseNutritionData(response);
-            if (nutritionData) {
-                addMeal(nutritionData);
-                AppState.audioBlob = null;
-                document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
-            } else {
-                alert('❌ Nerozpoznané jídlo v hlasovém záznamu\n\nZkuste mluvit jasněji.');
-                AppState.audioBlob = null;
-                document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
-            }
+        if (nutritionData) {
+            await addMeal(nutritionData);
+            // Reset audio state
+            AppState.audioBlob = null;
+            document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
+        } else {
+            alert('Nepodařilo se analyzovat audio. Zkuste to prosím znovu.');
         }
     } catch (error) {
-        showInlineLoading('voiceLoading', false);
+        console.error('❌ Voice analysis error:', error);
+        alert(`Chyba při analýze zvuku: ${error.message}`);
+    } finally {
         AppState.isProcessing = false;
-        console.error('Error analyzing voice:', error);
-        alert('Chyba při zpracování audio: ' + error.message);
+        showLoading(false);
     }
 }
 
-/**
- * Convert blob to base64
- */
-function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-}
 
 // =====================================
 // UI FUNCTIONS

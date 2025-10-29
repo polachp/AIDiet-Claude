@@ -5,6 +5,7 @@
 
 /**
  * Get Gemini API key from Firestore config
+ * @deprecated Use getAIProvidersConfig() instead
  * @returns {Promise<string>} API key
  */
 async function getApiKeyFromFirestore() {
@@ -19,6 +20,92 @@ async function getApiKeyFromFirestore() {
         }
     } catch (error) {
         console.error('Error fetching API key:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get AI Providers configuration from Firestore
+ * @returns {Promise<Object>} AI providers config
+ * Structure:
+ * {
+ *   defaultProvider: "gemini",
+ *   providers: {
+ *     gemini: { apiKey: "...", enabled: true, models: [...], ... },
+ *     deepseek: { apiKey: "...", enabled: false, ... }
+ *   },
+ *   fallbackOrder: ["gemini", "deepseek"]
+ * }
+ */
+async function getAIProvidersConfig() {
+    try {
+        const docRef = db.collection('config').doc('aiProviders');
+        const doc = await docRef.get();
+
+        if (doc.exists) {
+            const config = doc.data();
+            console.log('✅ AI Providers config loaded from Firestore');
+            return config;
+        } else {
+            // Fallback: pokus o starý formát (pouze Gemini)
+            console.warn('⚠️ aiProviders config not found, trying legacy format...');
+            const legacyKey = await getApiKeyFromFirestore();
+
+            // Vytvoř default config pro zpětnou kompatibilitu
+            return {
+                defaultProvider: 'gemini',
+                providers: {
+                    gemini: {
+                        apiKey: legacyKey,
+                        enabled: true,
+                        models: ['gemini-2.5-flash', 'gemini-2.5-flash-lite'],
+                        apiVersions: ['v1beta', 'v1'],
+                        capabilities: {
+                            text: true,
+                            images: true,
+                            audio: true
+                        }
+                    }
+                },
+                fallbackOrder: ['gemini']
+            };
+        }
+    } catch (error) {
+        console.error('❌ Error fetching AI providers config:', error);
+        throw error;
+    }
+}
+
+/**
+ * Save AI Providers configuration to Firestore
+ * @param {Object} config - AI providers configuration
+ * @returns {Promise<void>}
+ */
+async function saveAIProvidersConfig(config) {
+    try {
+        const docRef = db.collection('config').doc('aiProviders');
+        await docRef.set(config, { merge: true });
+        console.log('✅ AI Providers config saved to Firestore');
+    } catch (error) {
+        console.error('❌ Error saving AI providers config:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update default AI provider
+ * @param {string} providerName - Provider name ('gemini', 'deepseek', etc.)
+ * @returns {Promise<void>}
+ */
+async function updateDefaultProvider(providerName) {
+    try {
+        const docRef = db.collection('config').doc('aiProviders');
+        await docRef.update({
+            defaultProvider: providerName
+        });
+        console.log(`✅ Default provider updated to: ${providerName}`);
+    } catch (error) {
+        console.error('❌ Error updating default provider:', error);
         throw error;
     }
 }

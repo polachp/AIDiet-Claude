@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Diet is a multi-user web application for tracking calorie intake using Google Gemini API. Built with vanilla JavaScript, HTML, and CSS - no build tools required. Uses Firebase for authentication (Google OAuth + Email/Password) and cloud storage (Firestore). Centralized API key shared across all users.
+AI Diet is a multi-user web application for tracking calorie intake using **multiple AI providers** (Gemini, DeepSeek). Built with vanilla JavaScript, HTML, and CSS - no build tools required. Uses Firebase for authentication (Google OAuth + Email/Password) and cloud storage (Firestore). **Strategy Pattern** architecture for AI providers.
 
 ## Running the Application
 
@@ -14,12 +14,39 @@ AI Diet is a multi-user web application for tracking calorie intake using Google
 
 ## Architecture
 
-### Data Flow
+### Modular Structure (NEW)
+
+```
+├── ai-providers/          # Strategy Pattern implementation
+│   ├── base-provider.js   # Abstract interface
+│   ├── gemini-provider.js # Google Gemini implementation
+│   ├── deepseek-provider.js # DeepSeek implementation
+│   └── provider-factory.js # Factory for creating providers
+├── services/
+│   ├── ai-service.js      # Main orchestrator with fallback
+│   ├── nutrition-parser.js # Parse AI responses
+│   └── firestore-service.js # Database operations
+├── analyzers/
+│   ├── text-analyzer.js   # Text input handler
+│   ├── photo-analyzer.js  # Image input handler
+│   └── voice-analyzer.js  # Audio input handler
+├── utils/
+│   └── media-converter.js # Base64 conversion utilities
+├── app.js                 # Main orchestration (1,074 lines, reduced from 1,404)
+├── auth.js                # Authentication
+├── firebase-config.js     # Firebase initialization
+└── index.html             # UI structure
+```
+
+### Data Flow (UPDATED)
+
 ```
 Firebase Auth → User logged in
   → User Input (text/photo/audio)
-  → Gemini API (multimodal analysis)
-  → parseNutritionData()
+  → AIService (selects provider based on capability)
+  → Analyzer (TextAnalyzer/PhotoAnalyzer/VoiceAnalyzer)
+  → AI Provider (Gemini/DeepSeek with automatic fallback)
+  → NutritionParser.parse()
   → addMealToFirestore()
   → Firestore real-time listener
   → updateSummary() + displayMeals()
@@ -27,31 +54,117 @@ Firebase Auth → User logged in
 
 ### Key State Management
 
-**Global Variables (app.js):**
+**AppState (app.js):**
 - `currentUser` - Firebase user object (uid, email)
 - `meals[]` - Today's meals (synced via real-time listener)
-- `apiKey` - Shared Gemini API key from Firestore `/config/gemini`
+- `aiConfig` - Multi-provider configuration from Firestore
 - `userData` - User profile (age, gender, weight, height, activity)
 - `dailyGoals` - Calculated TDEE and macros
 - `unsubscribeMealsListener` - Firestore listener cleanup function
 
 **Firestore Structure:**
-- `/config/gemini` - Shared API key (read-only for clients)
+- `/config/aiProviders` - **NEW:** Multi-provider configuration with fallback
+  ```javascript
+  {
+    defaultProvider: "gemini",
+    providers: {
+      gemini: { apiKey, models, apiVersions, capabilities },
+      deepseek: { apiKey, model, endpoint, capabilities }
+    },
+    fallbackOrder: ["gemini", "deepseek"]
+  }
+  ```
+- `/config/gemini` - **DEPRECATED:** Legacy single API key (backward compatible)
 - `/users/{userId}/data/profile` - User profile + calculated goals
 - `/users/{userId}/meals/{date}/items/{mealId}` - Meal entries
-- `/users/{userId}/rateLimit/{date}` - API call counter (max 100/day)
+- `/users/{userId}/rateLimit/{date}` - API call counter (max 100/day for Gemini)
 
 ### Firebase Integration
 
 **Auth (auth.js):** Google OAuth + Email/Password. Auth observer in `firebase-config.js` → `showMainApp()` or `showAuthUI()`.
-**Service Layer (firestore-service.js):** `getApiKeyFromFirestore()`, `saveUserProfile()` (calculates goals), `listenToTodayMeals()` (real-time), `addMealToFirestore()`, `deleteMealFromFirestore()`, rate limiting functions.
-**Init Flow:** Auth change → `initializeApp(user)` loads API key, profile, sets listener OR `clearAppData()` on logout.
 
-### Gemini API Integration
+**Service Layer (firestore-service.js):**
+- `getAIProvidersConfig()` - **NEW:** Loads multi-provider config with legacy fallback
+- `saveAIProvidersConfig(config)` - **NEW:** Saves provider configuration
+- `updateDefaultProvider(name)` - **NEW:** Changes active provider
+- `getApiKeyFromFirestore()` - **DEPRECATED:** Legacy single-key loader
+- `saveUserProfile()` - Calculates goals
+- `listenToTodayMeals()` - Real-time meal sync
+- Rate limiting functions
 
-**Model Fallback:** Tries `gemini-2.5-flash` → `gemini-2.5-flash-lite` across `v1beta` and `v1` API versions.
-**API Calls:** `callGeminiAPI(prompt, imageBase64)` and `callGeminiAPIWithAudio(prompt, audioBase64)` return `{name, calories, protein, carbs, fat}`.
-**Voice Input:** MediaRecorder API records audio, Gemini transcribes + analyzes in one request. Requires localhost/HTTPS.
+**Init Flow:**
+```
+Auth change → initializeApp(user)
+  → loadAIConfig()
+  → aiService.initialize(config)
+  → Loads profile, sets listener
+OR clearAppData() on logout
+```
+
+### AI Provider Integration (NEW - Strategy Pattern)
+
+**BaseAIProvider (base-provider.js):**
+- Abstract interface defining `analyzeText()`, `analyzeImage()`, `analyzeAudio()`
+- Capability checks: `supportsImages()`, `supportsAudio()`, `supportsText()`
+- Health check: `healthCheck()`
+
+**GeminiProvider (gemini-provider.js):**
+- Implements full multimodal support (text, images, audio)
+- Model fallback: `gemini-2.5-flash` → `gemini-2.5-flash-lite`
+- API version fallback: `v1beta` → `v1`
+- Returns raw AI response text
+
+**DeepSeekProvider (deepseek-provider.js):**
+- ⚠️ **TEXT ONLY** - no image/audio support
+- Uses OpenAI-compatible API format
+- Endpoint: `https://api.deepseek.com/chat/completions`
+- Forces JSON output with `response_format: { type: 'json_object' }`
+- Cheaper alternative for text analysis
+
+**AIProviderFactory (provider-factory.js):**
+- Creates provider instances: `createProvider(type, config)`
+- Creates all providers: `createAllProviders(aiConfig)`
+- Smart fallback: `getProviderWithFallback()`
+- Capability-based selection: `getProviderByCapability()`
+
+**AIService (ai-service.js):**
+- Main orchestrator (singleton: `aiService`)
+- Methods:
+  - `initialize(aiConfig)` - Setup with config
+  - `analyzeText(description)` - Text analysis
+  - `analyzeImage(base64, context)` - Image analysis
+  - `analyzeAudio(base64)` - Audio analysis
+- Automatic provider selection based on capability
+- Fallback to alternative provider on failure
+- Health checks on initialization
+
+**NutritionParser (nutrition-parser.js):**
+- `parse(aiResponse)` - Extracts nutrition data from AI text
+- Supports JSON and text formats
+- Validates: structure, value ranges, minimums
+- Creates prompts: `createFoodAnalysisPrompt()`, `createImageAnalysisPrompt()`, `createAudioAnalysisPrompt()`
+
+### Analyzers (NEW)
+
+**TextAnalyzer (text-analyzer.js):**
+- `analyze(textInput)` - Validates and calls `aiService.analyzeText()`
+- Returns `{name, calories, protein, carbs, fat}`
+
+**PhotoAnalyzer (photo-analyzer.js):**
+- `analyze(imageFile, context)` - Validates, converts to base64, analyzes
+- Auto-compression for files >500KB (max 1024x1024, quality 0.8)
+- Uses `MediaConverter.compressImage()` or `fileToBase64()`
+
+**VoiceAnalyzer (voice-analyzer.js):**
+- `analyze(audioBlob)` - Converts blob to base64, calls AI
+- Uses `MediaConverter.blobToBase64()`
+- Static helpers: `getSupportedAudioFormat()`, `isSupported()`
+
+**MediaConverter (media-converter.js):**
+- `fileToBase64(file)` - File → base64 string
+- `blobToBase64(blob)` - Blob → base64 string
+- `compressImage(file, maxW, maxH, quality)` - Smart image compression
+- Validators: `isImageFile()`, `isAudioFile()`, `isVideoFile()`
 
 ### Nutrition Calculations
 
@@ -62,9 +175,18 @@ Firebase Auth → User logged in
 ### UI Patterns
 
 **Auth Toggle:** `authScreen` and `mainApp` switched via `display: none/block`. Auth state observer in `firebase-config.js` handles transitions.
-**Settings Modal:** Hidden by default, toggled via header button. Settings button in header.
+
+**Settings Modal:**
+- User data section (age, gender, weight, height, activity, goal)
+- **NEW:** AI Provider selection with capability indicators
+  - Radio buttons for provider selection
+  - Visual indicators: 📝 Text, 📷 Images, 🎤 Audio
+  - Warnings for limited providers (DeepSeek)
+  - Live capability display
+
 **Circular Progress:** SVG `stroke-dashoffset` animation for macro nutrients (radius 52, circumference = 2πr).
-**Dynamic Updates:** `mealsList` regenerated on Firestore listener callback. Preserve element IDs: `authScreen`, `mainApp`, `loginForm`, `registerForm`, `userDataSection`, `mealsList`.
+
+**Dynamic Updates:** `mealsList` regenerated on Firestore listener callback. Preserve element IDs: `authScreen`, `mainApp`, `loginForm`, `registerForm`, `userDataSection`, `mealsList`, `aiProvidersList`, `providerCapabilities`.
 
 ### Design System
 
@@ -73,26 +195,82 @@ Firebase Auth → User logged in
 
 ## Common Modifications
 
-**New input type:** Add tab in `index.html`, create `analyzeNewType()` → `callGeminiAPI()` → `parseNutritionData()` → `addMealToFirestore()`.
+**Add new AI provider:**
+1. Create new provider class extending `BaseAIProvider` in `ai-providers/`
+2. Implement `analyzeText()`, `analyzeImage()`, `analyzeAudio()` methods
+3. Add to `AIProviderFactory.createProvider()` switch statement
+4. Add configuration to Firestore `/config/aiProviders`
+
+**Change default provider:**
+- UI: Settings → AI Provider → Select provider
+- Code: `aiService.setDefaultProvider('name')`
+- Firestore: Update `defaultProvider` field in `/config/aiProviders`
+
+**New input type:**
+1. Add tab in `index.html`
+2. Create analyzer in `analyzers/` extending pattern
+3. Add method to `AIService` if needed
+4. Wire up in `app.js`
+
 **Change macros:** Edit percentages in `calculateDailyGoals()`. Total must = 100%.
-**New Gemini models:** Add to `modelsToTry` array in API functions.
 
 ## Deployment
 
 No build process required. Deploy these files:
-- `index.html`, `app.js`, `styles.css`, `auth.js`, `firebase-config.js`, `firestore-service.js`
-- `netlify.toml`, `vercel.json` (optional, for respective platforms)
-- `START-SERVER.bat`, `test-api.html`, `FIREBASE-SETUP.md` (dev tools, not needed in production)
 
-**Prerequisites:** Configure Firebase project and update `firebase-config.js` with your credentials (see `FIREBASE-SETUP.md`).
+**Core:**
+- `index.html`, `app.js`, `styles.css`
+- `auth.js`, `firebase-config.js`, `firestore-service.js`
+
+**AI Providers (NEW):**
+- `ai-providers/*.js` (base, gemini, deepseek, factory)
+
+**Services (NEW):**
+- `services/*.js` (ai-service, nutrition-parser)
+
+**Analyzers (NEW):**
+- `analyzers/*.js` (text, photo, voice)
+
+**Utils (NEW):**
+- `utils/*.js` (media-converter)
+
+**Optional:**
+- `netlify.toml`, `vercel.json` (platform configs)
+- `START-SERVER.bat`, `test-api.html` (dev tools)
+- `FIREBASE-SETUP.md`, `AI-PROVIDERS-SETUP.md` (documentation)
+
+**Prerequisites:**
+1. Configure Firebase project and update `firebase-config.js` (see `FIREBASE-SETUP.md`)
+2. Set up AI providers in Firestore (see `AI-PROVIDERS-SETUP.md`)
 
 Works on: GitHub Pages, Netlify, Vercel, Railway, any static host.
 
 ## Important Constraints
 
 - **Firebase required** - Authentication and Firestore database mandatory
-- **Multi-user** - Each user has isolated data, shared API key
+- **Multi-user** - Each user has isolated data, shared AI provider configs
 - **Rate limited** - Max 100 Gemini API calls per user per day
 - **Daily data** - Meals stored per date, older dates remain in Firestore
-- **Gemini API required** - No offline fallback
+- **Multi-AI support** - Gemini (full multimodal) or DeepSeek (text only)
+- **Automatic fallback** - If primary provider fails, tries alternatives
 - **Czech language** - UI text and alerts in Czech
+
+## Key Changes from Original
+
+**Refactoring (v2.0):**
+- ✅ Reduced `app.js` from 1,404 → 1,074 lines (23.5% smaller)
+- ✅ Extracted 330+ lines into modular architecture
+- ✅ Strategy Pattern for AI providers (easy to add GPT-4, Claude, etc.)
+- ✅ Automatic provider fallback on failure
+- ✅ UI for switching AI providers
+- ✅ DeepSeek support for cost optimization
+- ✅ Better error handling and logging
+- ✅ Backward compatible with legacy config
+
+**File Structure:**
+- **Before:** All in `app.js` (monolithic)
+- **After:** Modular folders (providers, services, analyzers, utils)
+
+**Configuration:**
+- **Before:** `/config/gemini` with single API key
+- **After:** `/config/aiProviders` with multi-provider support + fallback
