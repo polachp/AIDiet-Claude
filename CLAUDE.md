@@ -245,6 +245,23 @@ No build process required. Deploy these files:
 
 Works on: GitHub Pages, Netlify, Vercel, Railway, any static host.
 
+## Git Workflow
+
+**⚠️ CRITICAL: Main branch = Production**
+
+- ❌ **NEVER push to main** without explicit user approval
+- ✅ **Commit locally** with proper commit messages
+- ✅ **Wait for user testing** - user must test changes first
+- ✅ **Push only after** user says "go git", "push to git", or similar confirmation
+- 📋 **Process:**
+  1. Make changes
+  2. Commit locally (`git add . && git commit`)
+  3. Tell user: "Changes committed locally, ready for testing"
+  4. **WAIT** for user to test
+  5. User says "go git" → then `git push origin main`
+
+**Reasoning:** Every push to main goes live to production. User needs to verify changes work correctly before deployment.
+
 ## Important Constraints
 
 - **Firebase required** - Authentication and Firestore database mandatory
