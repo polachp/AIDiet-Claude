@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
       return cache.addAll(STATIC_ASSETS);
     })
   );
-  self.skipWaiting();
+  // Don't skipWaiting immediately - wait for user reload
 });
 
 // Activate - cleanup old caches
@@ -32,7 +32,7 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  // Don't claim clients immediately - prevents logout
 });
 
 // Fetch - network first, fallback to cache
