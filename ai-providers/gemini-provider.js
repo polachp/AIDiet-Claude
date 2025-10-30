@@ -28,29 +28,29 @@ class GeminiProvider extends BaseAIProvider {
     /**
      * Analyzuje textový vstup
      */
-    async analyzeText(prompt) {
-        return await this._callGeminiAPI(prompt, null, null);
+    async analyzeText(prompt, abortController = null) {
+        return await this._callGeminiAPI(prompt, null, null, abortController);
     }
 
     /**
      * Analyzuje obrázek s textem
      */
-    async analyzeImage(prompt, imageBase64) {
-        return await this._callGeminiAPI(prompt, imageBase64, 'image');
+    async analyzeImage(prompt, imageBase64, abortController = null) {
+        return await this._callGeminiAPI(prompt, imageBase64, 'image', abortController);
     }
 
     /**
      * Analyzuje audio vstup
      */
-    async analyzeAudio(prompt, audioBase64) {
-        return await this._callGeminiAPI(prompt, audioBase64, 'audio');
+    async analyzeAudio(prompt, audioBase64, abortController = null) {
+        return await this._callGeminiAPI(prompt, audioBase64, 'audio', abortController);
     }
 
     /**
      * Interní metoda pro volání Gemini API
      * @private
      */
-    async _callGeminiAPI(prompt, mediaBase64 = null, mediaType = null) {
+    async _callGeminiAPI(prompt, mediaBase64 = null, mediaType = null, abortController = null) {
         if (!this.config.apiKey) {
             throw new Error('API klíč není dostupný');
         }
@@ -61,6 +61,11 @@ class GeminiProvider extends BaseAIProvider {
         // Zkouší různé modely a API verze
         for (const modelName of this.models) {
             for (const apiVersion of this.apiVersions) {
+                // Kontrola zrušení před každým pokusem
+                if (abortController?.signal.aborted) {
+                    throw new DOMException('Request aborted', 'AbortError');
+                }
+
                 try {
                     console.log(`🔄 Gemini: Trying ${apiVersion}/models/${modelName}${mediaType ? ` (${mediaType})` : ''}`);
 
@@ -71,7 +76,8 @@ class GeminiProvider extends BaseAIProvider {
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify(requestBody)
+                        body: JSON.stringify(requestBody),
+                        signal: abortController?.signal
                     });
 
                     if (!response.ok) {

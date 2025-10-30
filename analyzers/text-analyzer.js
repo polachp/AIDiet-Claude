@@ -16,10 +16,11 @@ class TextAnalyzer {
     /**
      * Analyzuje textový popis jídla
      * @param {string} textInput - Textový popis jídla od uživatele
+     * @param {AbortController} abortController - Pro zrušení požadavku (optional)
      * @returns {Promise<Object>} Výživové údaje
      * @throws {Error} Při prázdném vstupu nebo chybě analýzy
      */
-    async analyze(textInput) {
+    async analyze(textInput, abortController = null) {
         console.log('📝 TextAnalyzer: Zahajuji analýzu textu');
 
         // Validace vstupu
@@ -42,7 +43,7 @@ class TextAnalyzer {
         try {
             // Deleguj analýzu na AIService
             console.log('🔄 TextAnalyzer: Volám AIService.analyzeText()');
-            const nutritionData = await aiService.analyzeText(trimmedInput);
+            const nutritionData = await aiService.analyzeText(trimmedInput, null, abortController);
 
             if (!nutritionData) {
                 const errorMsg = 'Nepodařilo se analyzovat jídlo. Zkuste popsat jídlo konkrétněji.';
@@ -55,6 +56,11 @@ class TextAnalyzer {
 
         } catch (error) {
             console.error('❌ TextAnalyzer: Chyba při analýze:', error);
+
+            // Propaguj AbortError
+            if (error.name === 'AbortError') {
+                throw error;
+            }
 
             // Pokud je to už naše chyba, propaguj ji
             if (error.message.includes('Zadejte prosím') ||

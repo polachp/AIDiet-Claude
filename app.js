@@ -16,7 +16,8 @@ const AppState = {
     mediaRecorder: null,
     audioChunks: [],
     audioBlob: null,
-    selectedDate: null // Current selected date (null = today)
+    selectedDate: null, // Current selected date (null = today)
+    abortController: null // For canceling API requests
 };
 
 // =====================================
@@ -545,11 +546,12 @@ async function analyzeText() {
     }
 
     AppState.isProcessing = true;
-    showLoading(true);
+    AppState.abortController = new AbortController();
+    showLoading(true, '📝 Analyzuji text...');
 
     try {
         const textAnalyzer = new TextAnalyzer();
-        const nutritionData = await textAnalyzer.analyze(text);
+        const nutritionData = await textAnalyzer.analyze(text, AppState.abortController);
 
         if (nutritionData) {
             await addMeal(nutritionData);
@@ -558,8 +560,12 @@ async function analyzeText() {
             alert('Nepodařilo se analyzovat jídlo. Zkuste to prosím znovu.');
         }
     } catch (error) {
-        console.error('❌ Text analysis error:', error);
-        alert(`Chyba při analýze: ${error.message}`);
+        if (error.name === 'AbortError') {
+            console.log('✅ Text analysis canceled by user');
+        } else {
+            console.error('❌ Text analysis error:', error);
+            alert(`Chyba při analýze: ${error.message}`);
+        }
     } finally {
         AppState.isProcessing = false;
         showLoading(false);
@@ -585,11 +591,12 @@ async function analyzePhoto() {
     }
 
     AppState.isProcessing = true;
-    showLoading(true);
+    AppState.abortController = new AbortController();
+    showLoading(true, '📷 Analyzuji fotografii...');
 
     try {
         const photoAnalyzer = new PhotoAnalyzer();
-        const nutritionData = await photoAnalyzer.analyze(file);
+        const nutritionData = await photoAnalyzer.analyze(file, '', AppState.abortController);
 
         if (nutritionData) {
             await addMeal(nutritionData);
@@ -598,8 +605,12 @@ async function analyzePhoto() {
             alert('Nepodařilo se analyzovat fotografii. Zkuste to prosím znovu.');
         }
     } catch (error) {
-        console.error('❌ Photo analysis error:', error);
-        alert(`Chyba při analýze fotografie: ${error.message}`);
+        if (error.name === 'AbortError') {
+            console.log('✅ Photo analysis canceled by user');
+        } else {
+            console.error('❌ Photo analysis error:', error);
+            alert(`Chyba při analýze fotografie: ${error.message}`);
+        }
     } finally {
         AppState.isProcessing = false;
         showLoading(false);
@@ -699,11 +710,12 @@ async function analyzeVoice() {
     if (AppState.isProcessing) return;
 
     AppState.isProcessing = true;
-    showLoading(true);
+    AppState.abortController = new AbortController();
+    showLoading(true, '🎤 Analyzuji hlasový vstup...');
 
     try {
         const voiceAnalyzer = new VoiceAnalyzer();
-        const nutritionData = await voiceAnalyzer.analyze(AppState.audioBlob);
+        const nutritionData = await voiceAnalyzer.analyze(AppState.audioBlob, AppState.abortController);
 
         if (nutritionData) {
             await addMeal(nutritionData);
@@ -714,8 +726,12 @@ async function analyzeVoice() {
             alert('Nepodařilo se analyzovat audio. Zkuste to prosím znovu.');
         }
     } catch (error) {
-        console.error('❌ Voice analysis error:', error);
-        alert(`Chyba při analýze zvuku: ${error.message}`);
+        if (error.name === 'AbortError') {
+            console.log('✅ Voice analysis canceled by user');
+        } else {
+            console.error('❌ Voice analysis error:', error);
+            alert(`Chyba při analýze zvuku: ${error.message}`);
+        }
     } finally {
         AppState.isProcessing = false;
         showLoading(false);
@@ -1161,13 +1177,44 @@ function updateCurrentDate() {
 }
 
 /**
- * Show/hide loading indicator
+ * Show/hide loading modal with cancel option
+ * @param {boolean} show - Show or hide the modal
+ * @param {string} message - Custom loading message
  */
-function showLoading(show) {
-    const loading = document.getElementById('loading');
-    if (loading) {
-        loading.style.display = show ? 'block' : 'none';
+function showLoading(show, message = 'Analyzuji jídlo...') {
+    const modal = document.getElementById('loadingModal');
+    const messageEl = document.getElementById('loadingMessage');
+
+    if (!modal) return;
+
+    if (show) {
+        if (messageEl) messageEl.textContent = message;
+        modal.style.display = 'flex';
+
+        // Setup cancel button
+        const cancelBtn = document.getElementById('cancelAnalysisBtn');
+        if (cancelBtn) {
+            cancelBtn.onclick = cancelAnalysis;
+        }
+    } else {
+        modal.style.display = 'none';
+        AppState.abortController = null;
     }
+}
+
+/**
+ * Cancel ongoing analysis
+ */
+function cancelAnalysis() {
+    console.log('🛑 Canceling analysis...');
+
+    if (AppState.abortController) {
+        AppState.abortController.abort();
+        AppState.abortController = null;
+    }
+
+    AppState.isProcessing = false;
+    showLoading(false);
 }
 
 /**

@@ -31,15 +31,15 @@ class DeepSeekProvider extends BaseAIProvider {
     /**
      * Analyzuje textový vstup
      */
-    async analyzeText(prompt) {
-        return await this._callDeepSeekAPI(prompt);
+    async analyzeText(prompt, abortController = null) {
+        return await this._callDeepSeekAPI(prompt, abortController);
     }
 
     /**
      * Analyzuje obrázek - NEPODPOROVÁNO
      * @throws {Error} - DeepSeek nepodporuje obrázky
      */
-    async analyzeImage(prompt, imageBase64) {
+    async analyzeImage(prompt, imageBase64, abortController = null) {
         throw new Error('DeepSeek nepodporuje analýzu obrázků. Použijte jiného providera (např. Gemini).');
     }
 
@@ -47,7 +47,7 @@ class DeepSeekProvider extends BaseAIProvider {
      * Analyzuje audio - NEPODPOROVÁNO
      * @throws {Error} - DeepSeek nepodporuje audio
      */
-    async analyzeAudio(prompt, audioBase64) {
+    async analyzeAudio(prompt, audioBase64, abortController = null) {
         throw new Error('DeepSeek nepodporuje analýzu audia. Použijte jiného providera (např. Gemini).');
     }
 
@@ -55,9 +55,14 @@ class DeepSeekProvider extends BaseAIProvider {
      * Interní metoda pro volání DeepSeek API
      * @private
      */
-    async _callDeepSeekAPI(prompt) {
+    async _callDeepSeekAPI(prompt, abortController = null) {
         if (!this.config.apiKey) {
             throw new Error('API klíč není dostupný');
+        }
+
+        // Kontrola zrušení
+        if (abortController?.signal.aborted) {
+            throw new DOMException('Request aborted', 'AbortError');
         }
 
         try {
@@ -85,7 +90,8 @@ class DeepSeekProvider extends BaseAIProvider {
                     temperature: this.temperature,
                     max_tokens: this.maxTokens,
                     response_format: { type: 'json_object' }  // Vynucuje JSON výstup
-                })
+                }),
+                signal: abortController?.signal
             });
 
             if (!response.ok) {

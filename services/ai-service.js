@@ -49,11 +49,12 @@ class AIService {
      * Analyzuje text
      * @param {string} foodDescription - Popis jídla
      * @param {string} preferredProvider - Preferovaný provider (optional)
+     * @param {AbortController} abortController - Pro zrušení požadavku (optional)
      * @returns {Promise<Object>} Výživové údaje
      */
-    async analyzeText(foodDescription, preferredProvider = null) {
+    async analyzeText(foodDescription, preferredProvider = null, abortController = null) {
         const prompt = NutritionParser.createFoodAnalysisPrompt(foodDescription);
-        return await this._analyzeWithFallback('text', prompt, null, preferredProvider);
+        return await this._analyzeWithFallback('text', prompt, null, preferredProvider, abortController);
     }
 
     /**
@@ -61,29 +62,36 @@ class AIService {
      * @param {string} imageBase64 - Base64 obrázek
      * @param {string} additionalContext - Dodatečný kontext (optional)
      * @param {string} preferredProvider - Preferovaný provider (optional)
+     * @param {AbortController} abortController - Pro zrušení požadavku (optional)
      * @returns {Promise<Object>} Výživové údaje
      */
-    async analyzeImage(imageBase64, additionalContext = '', preferredProvider = null) {
+    async analyzeImage(imageBase64, additionalContext = '', preferredProvider = null, abortController = null) {
         const prompt = NutritionParser.createImageAnalysisPrompt(additionalContext);
-        return await this._analyzeWithFallback('image', prompt, imageBase64, preferredProvider);
+        return await this._analyzeWithFallback('image', prompt, imageBase64, preferredProvider, abortController);
     }
 
     /**
      * Analyzuje audio
      * @param {string} audioBase64 - Base64 audio
      * @param {string} preferredProvider - Preferovaný provider (optional)
+     * @param {AbortController} abortController - Pro zrušení požadavku (optional)
      * @returns {Promise<Object>} Výživové údaje
      */
-    async analyzeAudio(audioBase64, preferredProvider = null) {
+    async analyzeAudio(audioBase64, preferredProvider = null, abortController = null) {
         const prompt = NutritionParser.createAudioAnalysisPrompt();
-        return await this._analyzeWithFallback('audio', prompt, audioBase64, preferredProvider);
+        return await this._analyzeWithFallback('audio', prompt, audioBase64, preferredProvider, abortController);
     }
 
     /**
      * Interní metoda pro analýzu s fallback logikou
      * @private
      */
-    async _analyzeWithFallback(analysisType, prompt, mediaData, preferredProvider) {
+    async _analyzeWithFallback(analysisType, prompt, mediaData, preferredProvider, abortController = null) {
+        // Kontrola zrušení před začátkem
+        if (abortController?.signal.aborted) {
+            throw new DOMException('Request aborted', 'AbortError');
+        }
+
         const capabilityMap = {
             'text': 'text',
             'image': 'images',
@@ -120,6 +128,11 @@ class AIService {
             throw new Error(`Žádný provider nepodporuje ${analysisType}. Zkontrolujte konfiguraci.`);
         }
 
+        // Kontrola zrušení před analýzou
+        if (abortController?.signal.aborted) {
+            throw new DOMException('Request aborted', 'AbortError');
+        }
+
         // Proveď analýzu
         try {
             console.log(`🔄 AIService: Analyzing ${analysisType} with ${provider.getName()}`);
@@ -127,16 +140,21 @@ class AIService {
             let aiResponse;
             switch (analysisType) {
                 case 'text':
-                    aiResponse = await provider.analyzeText(prompt);
+                    aiResponse = await provider.analyzeText(prompt, abortController);
                     break;
                 case 'image':
-                    aiResponse = await provider.analyzeImage(prompt, mediaData);
+                    aiResponse = await provider.analyzeImage(prompt, mediaData, abortController);
                     break;
                 case 'audio':
-                    aiResponse = await provider.analyzeAudio(prompt, mediaData);
+                    aiResponse = await provider.analyzeAudio(prompt, mediaData, abortController);
                     break;
                 default:
                     throw new Error(`Nepodporovaný typ analýzy: ${analysisType}`);
+            }
+
+            // Kontrola zrušení po analýze
+            if (abortController?.signal.aborted) {
+                throw new DOMException('Request aborted', 'AbortError');
             }
 
             // Parsuj odpověď
@@ -150,10 +168,15 @@ class AIService {
             return nutritionData;
 
         } catch (error) {
+            // Propaguj AbortError okamžitě
+            if (error.name === 'AbortError') {
+                throw error;
+            }
+
             console.error(`❌ AIService: Chyba při analýze s ${provider.getName()}:`, error);
 
             // Zkus fallback na jiného providera
-            return await this._tryFallbackProvider(analysisType, prompt, mediaData, provider.getName());
+            return await this._tryFallbackProvider(analysisType, prompt, mediaData, provider.getName(), abortController);
         }
     }
 
@@ -161,7 +184,12 @@ class AIService {
      * Pokus o fallback na jiného providera
      * @private
      */
-    async _tryFallbackProvider(analysisType, prompt, mediaData, failedProviderName) {
+    async _tryFallbackProvider(analysisType, prompt, mediaData, failedProviderName, abortController = null) {
+        // Kontrola zrušení
+        if (abortController?.signal.aborted) {
+            throw new DOMException('Request aborted', 'AbortError');
+        }
+
         const capabilityMap = {
             'text': 'text',
             'image': 'images',
@@ -177,19 +205,24 @@ class AIService {
             if (name === failedProviderName) continue; // Přeskoč selhavšího
             if (!provider.getCapabilities()[requiredCapability]) continue;
 
+            // Kontrola zrušení před každým pokusem
+            if (abortController?.signal.aborted) {
+                throw new DOMException('Request aborted', 'AbortError');
+            }
+
             try {
                 console.log(`🔄 AIService: Fallback na ${name}`);
 
                 let aiResponse;
                 switch (analysisType) {
                     case 'text':
-                        aiResponse = await provider.analyzeText(prompt);
+                        aiResponse = await provider.analyzeText(prompt, abortController);
                         break;
                     case 'image':
-                        aiResponse = await provider.analyzeImage(prompt, mediaData);
+                        aiResponse = await provider.analyzeImage(prompt, mediaData, abortController);
                         break;
                     case 'audio':
-                        aiResponse = await provider.analyzeAudio(prompt, mediaData);
+                        aiResponse = await provider.analyzeAudio(prompt, mediaData, abortController);
                         break;
                 }
 
@@ -201,6 +234,10 @@ class AIService {
                 }
 
             } catch (error) {
+                // Propaguj AbortError
+                if (error.name === 'AbortError') {
+                    throw error;
+                }
                 console.warn(`⚠️ AIService: Fallback s ${name} selhal:`, error.message);
             }
         }

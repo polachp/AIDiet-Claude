@@ -242,10 +242,16 @@
                 </div>
             </div>
 
-            <!-- Loading indicator -->
-            <div id="loading" class="loading" style="display: none;">
-                <div class="spinner"></div>
-                <p>Analyzuji jídlo...</p>
+            <!-- Loading Modal -->
+            <div id="loadingModal" class="loading-modal" style="display: none;">
+                <div class="loading-modal-content">
+                    <div class="loading-spinner-large"></div>
+                    <p id="loadingMessage" class="loading-message">Analyzuji jídlo...</p>
+                    <button id="cancelAnalysisBtn" class="btn-cancel-analysis">
+                        <span class="cancel-icon">✕</span>
+                        <span>Zrušit</span>
+                    </button>
+                </div>
             </div>
         </section>
 

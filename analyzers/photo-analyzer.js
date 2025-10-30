@@ -16,7 +16,7 @@ class PhotoAnalyzer {
      * @returns {Promise<Object>} Výživové údaje
      * @throws {Error} Při chybě validace nebo analýzy
      */
-    async analyze(imageFile, additionalContext = '') {
+    async analyze(imageFile, additionalContext = '', abortController = null) {
         console.log('📸 PhotoAnalyzer: Zahajuji analýzu obrázku');
 
         try {
@@ -32,7 +32,7 @@ class PhotoAnalyzer {
 
             // 4. Analýza pomocí AI služby
             console.log('📸 PhotoAnalyzer: Odesílám do AI služby...');
-            const nutritionData = await aiService.analyzeImage(imageBase64, additionalContext);
+            const nutritionData = await aiService.analyzeImage(imageBase64, additionalContext, null, abortController);
 
             if (!nutritionData) {
                 throw new Error('AI služba nevrátila platná data');

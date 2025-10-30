@@ -15,7 +15,7 @@ class VoiceAnalyzer {
      * @returns {Promise<Object>} Výživové údaje {name, calories, protein, carbs, fat}
      * @throws {Error} Při chybě validace nebo analýzy
      */
-    async analyze(audioBlob) {
+    async analyze(audioBlob, abortController = null) {
         console.log('🎤 VoiceAnalyzer: Zahájení analýzy audio vstupu');
 
         try {
@@ -35,7 +35,7 @@ class VoiceAnalyzer {
 
             // Analýza audio pomocí AI služby
             console.log('🤖 VoiceAnalyzer: Odesílání audio k AI analýze');
-            const nutritionData = await aiService.analyzeAudio(audioBase64);
+            const nutritionData = await aiService.analyzeAudio(audioBase64, null, abortController);
 
             if (!nutritionData) {
                 throw new Error('AI analýza nevrátila žádná data');
