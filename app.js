@@ -17,7 +17,9 @@ const AppState = {
     audioChunks: [],
     audioBlob: null,
     selectedDate: null, // Current selected date (null = today)
-    abortController: null // For canceling API requests
+    abortController: null, // For canceling API requests
+    recordingStartTime: null, // Recording start timestamp
+    recordingTimerInterval: null // Timer interval ID
 };
 
 // =====================================
@@ -642,8 +644,8 @@ function setupVoiceRecognition() {
 async function startVoiceRecognition() {
     const voiceBtn = document.getElementById('voiceBtn');
 
+    // If already recording, this shouldn't happen (button should be hidden)
     if (AppState.mediaRecorder && AppState.mediaRecorder.state === 'recording') {
-        AppState.mediaRecorder.stop();
         return;
     }
 
@@ -651,6 +653,7 @@ async function startVoiceRecognition() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
         AppState.audioChunks = [];
+        AppState.cancelRecordingFlag = false;
         AppState.mediaRecorder = new MediaRecorder(stream);
 
         AppState.mediaRecorder.ondataavailable = (event) => {
@@ -658,9 +661,18 @@ async function startVoiceRecognition() {
         };
 
         AppState.mediaRecorder.onstop = async () => {
-            AppState.audioBlob = new Blob(AppState.audioChunks, { type: 'audio/webm' });
-
             stream.getTracks().forEach(track => track.stop());
+
+            // Check if recording was canceled
+            if (AppState.cancelRecordingFlag) {
+                console.log('🛑 Recording canceled by user');
+                AppState.cancelRecordingFlag = false;
+                AppState.audioBlob = null;
+                AppState.audioChunks = [];
+                return;
+            }
+
+            AppState.audioBlob = new Blob(AppState.audioChunks, { type: 'audio/webm' });
 
             const sizeKB = (AppState.audioBlob.size / 1024).toFixed(2);
             console.log(`Nahrávka dokončena (${sizeKB} KB). Automaticky zpracovávám...`);
@@ -668,19 +680,25 @@ async function startVoiceRecognition() {
             voiceBtn.textContent = '🎤 Nahrát znovu';
             voiceBtn.style.background = '';
 
+            // Analyze automatically
             analyzeVoice();
         };
 
         AppState.mediaRecorder.onerror = (event) => {
             console.error('MediaRecorder error:', event.error);
             alert('Chyba při nahrávání: ' + event.error);
+            showRecordingModal(false);
             voiceBtn.textContent = '🎤 Začít nahrávat';
             voiceBtn.style.background = '';
         };
 
+        // Start recording and show modal
         AppState.mediaRecorder.start();
-        voiceBtn.textContent = '⏹️ Zastavit nahrávání';
-        voiceBtn.style.background = '#f44336';
+        showRecordingModal(true);
+
+        voiceBtn.textContent = '🎤 Nahrávání...';
+        voiceBtn.disabled = true;
+        voiceBtn.style.opacity = '0.5';
 
     } catch (error) {
         console.error('Error accessing microphone:', error);
@@ -1215,6 +1233,103 @@ function cancelAnalysis() {
 
     AppState.isProcessing = false;
     showLoading(false);
+}
+
+/**
+ * Show/hide recording modal with timer
+ */
+function showRecordingModal(show) {
+    const modal = document.getElementById('recordingModal');
+    if (!modal) return;
+
+    if (show) {
+        modal.style.display = 'flex';
+        AppState.recordingStartTime = Date.now();
+
+        // Start timer
+        updateRecordingTimer();
+        AppState.recordingTimerInterval = setInterval(updateRecordingTimer, 100);
+
+        // Setup buttons
+        const stopBtn = document.getElementById('stopRecordingBtn');
+        const cancelBtn = document.getElementById('cancelRecordingBtn');
+
+        if (stopBtn) stopBtn.onclick = stopRecording;
+        if (cancelBtn) cancelBtn.onclick = cancelRecording;
+    } else {
+        modal.style.display = 'none';
+
+        // Clear timer
+        if (AppState.recordingTimerInterval) {
+            clearInterval(AppState.recordingTimerInterval);
+            AppState.recordingTimerInterval = null;
+        }
+
+        AppState.recordingStartTime = null;
+
+        // Reset timer display
+        const timerEl = document.getElementById('recordingTimer');
+        if (timerEl) timerEl.textContent = '00:00';
+    }
+}
+
+/**
+ * Update recording timer display
+ */
+function updateRecordingTimer() {
+    if (!AppState.recordingStartTime) return;
+
+    const elapsed = Date.now() - AppState.recordingStartTime;
+    const seconds = Math.floor(elapsed / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    const timerEl = document.getElementById('recordingTimer');
+    if (timerEl) {
+        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+}
+
+/**
+ * Stop recording and proceed to analysis
+ */
+function stopRecording() {
+    console.log('⏹️ Stopping recording...');
+
+    if (AppState.mediaRecorder && AppState.mediaRecorder.state === 'recording') {
+        AppState.mediaRecorder.stop();
+    }
+
+    showRecordingModal(false);
+
+    const voiceBtn = document.getElementById('voiceBtn');
+    if (voiceBtn) {
+        voiceBtn.disabled = false;
+        voiceBtn.style.opacity = '1';
+    }
+}
+
+/**
+ * Cancel recording without analysis
+ */
+function cancelRecording() {
+    console.log('🛑 Canceling recording...');
+
+    if (AppState.mediaRecorder && AppState.mediaRecorder.state === 'recording') {
+        // Stop recording but flag to NOT analyze
+        AppState.cancelRecordingFlag = true;
+        AppState.mediaRecorder.stop();
+    }
+
+    showRecordingModal(false);
+
+    const voiceBtn = document.getElementById('voiceBtn');
+    if (voiceBtn) {
+        voiceBtn.textContent = '🎤 Začít nahrávat';
+        voiceBtn.style.background = '';
+        voiceBtn.disabled = false;
+        voiceBtn.style.opacity = '1';
+    }
 }
 
 /**
