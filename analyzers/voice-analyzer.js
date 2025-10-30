@@ -47,6 +47,11 @@ class VoiceAnalyzer {
         } catch (error) {
             console.error('❌ VoiceAnalyzer: Chyba při analýze:', error);
 
+            // Propaguj AbortError beze změny
+            if (error.name === 'AbortError') {
+                throw error;
+            }
+
             // Přeložení chyb do češtiny
             const czechError = this._translateError(error);
             throw new Error(czechError);

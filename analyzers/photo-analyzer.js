@@ -113,6 +113,11 @@ class PhotoAnalyzer {
      * @returns {Error} Upravená chyba
      */
     _handleError(error) {
+        // Propaguj AbortError beze změny
+        if (error.name === 'AbortError') {
+            return error;
+        }
+
         // Pokud už má chyba českou zprávu, vrať ji
         if (error.message && error.message.match(/[čšřžýáíéúůňťď]/i)) {
             return error;
