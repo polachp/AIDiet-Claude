@@ -1385,6 +1385,9 @@ function openMealEditModal(mode, meal) {
     const calories = meal.calories || 100;
     setupCaloriesSlider(calories);
 
+    // Setup macro inputs with percentages
+    setupMacroInputs();
+
     // Configure UI based on mode
     if (mode === 'edit') {
         title.textContent = 'Upravit jídlo';
@@ -1436,6 +1439,39 @@ function setupCaloriesSlider(calories) {
         }
         slider.value = newVal;
     };
+}
+
+/**
+ * Setup macro inputs with percentage display
+ */
+function setupMacroInputs() {
+    const proteinInput = document.getElementById('editMealProtein');
+    const carbsInput = document.getElementById('editMealCarbs');
+    const fatInput = document.getElementById('editMealFat');
+
+    const updatePercents = () => {
+        const protein = parseFloat(proteinInput.value) || 0;
+        const carbs = parseFloat(carbsInput.value) || 0;
+        const fat = parseFloat(fatInput.value) || 0;
+
+        // Calculate percentages based on daily goals
+        if (AppState.dailyGoals) {
+            const proteinPercent = Math.round((protein / AppState.dailyGoals.protein) * 100);
+            const carbsPercent = Math.round((carbs / AppState.dailyGoals.carbs) * 100);
+            const fatPercent = Math.round((fat / AppState.dailyGoals.fat) * 100);
+
+            document.getElementById('editProteinPercent').textContent = proteinPercent + '%';
+            document.getElementById('editCarbsPercent').textContent = carbsPercent + '%';
+            document.getElementById('editFatPercent').textContent = fatPercent + '%';
+        }
+    };
+
+    proteinInput.oninput = updatePercents;
+    carbsInput.oninput = updatePercents;
+    fatInput.oninput = updatePercents;
+
+    // Initial update
+    updatePercents();
 }
 
 /**

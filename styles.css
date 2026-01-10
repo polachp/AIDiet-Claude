@@ -1533,44 +1533,52 @@ button:disabled {
 
 .meal-edit-macros {
     display: flex;
-    gap: var(--space-md);
+    gap: 0;
     margin-top: var(--space-lg);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 
 .macro-input {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-lg);
-    padding: 10px 12px;
+    gap: 4px;
+    padding: 12px 8px;
+    border-right: 1px solid var(--separator);
+}
+
+.macro-input:last-child {
+    border-right: none;
 }
 
 .macro-icon {
-    font-size: 18px;
+    font-size: 20px;
 }
 
 .macro-input input {
-    flex: 1;
     border: none;
     background: transparent;
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 18px;
+    font-weight: 600;
     color: var(--text-primary);
     text-align: center;
-    width: 100%;
-    min-width: 0;
-    padding: 0;
+    width: 60px;
+    padding: 4px 0;
 }
 
 .macro-input input:focus {
     outline: none;
+    background: rgba(0, 122, 255, 0.08);
+    border-radius: var(--radius-sm);
 }
 
-.macro-unit {
-    font-size: 14px;
-    color: var(--text-secondary);
+.macro-percent {
+    font-size: 13px;
+    color: var(--ios-blue);
+    font-weight: 600;
 }
 
 /* Calories Slider */
