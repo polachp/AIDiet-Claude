@@ -347,9 +347,9 @@ async function saveUserData() {
 
         message += 'Vaše denní cílové hodnoty:\n';
         message += `Kalorie: ${calculatedGoals.calories} kcal\n`;
-        message += `Bílkoviny: ${calculatedGoals.protein}g\n`;
-        message += `Sacharidy: ${calculatedGoals.carbs}g\n`;
-        message += `Tuky: ${calculatedGoals.fat}g`;
+        message += `Bílkoviny: ${calculatedGoals.protein} g\n`;
+        message += `Sacharidy: ${calculatedGoals.carbs} g\n`;
+        message += `Tuky: ${calculatedGoals.fat} g`;
 
         alert(message);
 
@@ -444,11 +444,12 @@ function setupMealsListener() {
 
 /**
  * Add meal to Firestore
+ * @returns {string|null} - Meal ID if successful, null otherwise
  */
 async function addMeal(nutritionData) {
     if (!AppState.currentUser) {
         alert('Nejste přihlášen. Přihlaste se prosím.');
-        return;
+        return null;
     }
 
     try {
@@ -456,15 +457,24 @@ async function addMeal(nutritionData) {
         if (!canMakeCall) {
             const remaining = await getRemainingApiCalls(AppState.currentUser.uid);
             alert(`❌ Dosáhli jste denního limitu API volání.\n\nZbývající volání dnes: ${remaining}`);
-            return;
+            return null;
         }
 
         const dateString = getSelectedDateString();
-        await addMealToFirestore(AppState.currentUser.uid, nutritionData, dateString);
+        const mealId = await addMealToFirestore(AppState.currentUser.uid, nutritionData, dateString);
         console.log('✅ Meal added successfully to', dateString);
+
+        // Open edit modal for the new meal
+        openMealEditModal('new', {
+            id: mealId,
+            ...nutritionData
+        });
+
+        return mealId;
     } catch (error) {
         console.error('Error adding meal:', error);
         alert('Chyba při ukládání jídla. Zkuste to prosím znovu.');
+        return null;
     }
 }
 
@@ -508,8 +518,11 @@ function displayMeals() {
 
         const mealName = meal.name.charAt(0).toUpperCase() + meal.name.slice(1);
 
+        // Escape meal data for onclick
+        const mealJson = JSON.stringify(meal).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
         return `
-        <div class="meal-item-compact">
+        <div class="meal-item-compact" onclick="openMealEditModal('edit', ${mealJson})">
             <div class="meal-left">
                 <div class="meal-name-compact">${mealName}</div>
                 <div class="meal-meta">
@@ -518,11 +531,11 @@ function displayMeals() {
                 </div>
             </div>
             <div class="meal-right">
-                <span class="meal-macro-item">🥩 ${meal.protein}g</span>
-                <span class="meal-macro-item">🌾 ${meal.carbs}g</span>
-                <span class="meal-macro-item">🥑 ${meal.fat}g</span>
+                <span class="meal-macro-item">🥩 ${meal.protein} g</span>
+                <span class="meal-macro-item">🌾 ${meal.carbs} g</span>
+                <span class="meal-macro-item">🥑 ${meal.fat} g</span>
             </div>
-            <button class="btn-delete-compact" onclick="deleteMeal('${meal.id}')" title="Smazat">🗑️</button>
+            <button class="btn-delete-compact" onclick="event.stopPropagation(); deleteMeal('${meal.id}')" title="Smazat">🗑️</button>
         </div>
     `;
     }).join('');
@@ -899,7 +912,7 @@ function updateMacroBox(type, current, goal) {
 
     if (totalElement) totalElement.textContent = current;
     if (percentElement) percentElement.textContent = percent + '%';
-    if (goalElement) goalElement.textContent = `z ${goal}g`;
+    if (goalElement) goalElement.textContent = `z ${goal} g`;
 
     const macroBox = document.querySelector(`.macro-box[data-macro="${type}"]`);
     if (macroBox) {
@@ -1339,6 +1352,195 @@ function showInlineLoading(elementId, show) {
     const element = document.getElementById(elementId);
     if (element) {
         element.style.display = show ? 'flex' : 'none';
+    }
+}
+
+// =====================================
+// MEAL EDIT MODAL
+// =====================================
+
+/**
+ * Open meal edit modal
+ * @param {string} mode - 'edit' for existing meal, 'new' for newly added meal
+ * @param {Object} meal - Meal data (id, name, calories, protein, carbs, fat)
+ */
+function openMealEditModal(mode, meal) {
+    const modal = document.getElementById('mealEditModal');
+    const title = document.getElementById('mealEditTitle');
+    const deleteBtn = document.getElementById('mealEditDeleteBtn');
+    const saveBtn = document.getElementById('mealEditSaveBtn');
+    const cancelBtn = document.getElementById('mealEditCancelBtn');
+
+    // Set mode
+    document.getElementById('editMealMode').value = mode;
+    document.getElementById('editMealId').value = meal.id || '';
+
+    // Fill form
+    document.getElementById('editMealName').value = meal.name || '';
+    document.getElementById('editMealProtein').value = meal.protein || '';
+    document.getElementById('editMealCarbs').value = meal.carbs || '';
+    document.getElementById('editMealFat').value = meal.fat || '';
+
+    // Setup calories with dynamic slider
+    const calories = meal.calories || 100;
+    setupCaloriesSlider(calories);
+
+    // Configure UI based on mode
+    if (mode === 'edit') {
+        title.textContent = 'Upravit jídlo';
+        saveBtn.textContent = 'Uložit';
+        cancelBtn.textContent = 'Zrušit';
+        deleteBtn.style.display = 'block';
+    } else {
+        // mode === 'new'
+        title.textContent = 'Přidat jídlo';
+        saveBtn.textContent = 'OK';
+        cancelBtn.textContent = 'Zrušit';
+        deleteBtn.style.display = 'none';
+    }
+
+    // Show modal
+    modal.classList.add('active');
+}
+
+/**
+ * Setup calories slider with dynamic range (±50% of current value)
+ */
+function setupCaloriesSlider(calories) {
+    const slider = document.getElementById('editMealCaloriesSlider');
+    const input = document.getElementById('editMealCalories');
+
+    // Calculate dynamic range (±50%, minimum 50 kcal range)
+    const minVal = Math.max(0, Math.round(calories * 0.5));
+    const maxVal = Math.max(calories + 50, Math.round(calories * 1.5));
+
+    slider.min = minVal;
+    slider.max = maxVal;
+    slider.value = calories;
+    input.value = calories;
+
+    // Sync slider → input
+    slider.oninput = function() {
+        input.value = this.value;
+    };
+
+    // Sync input → slider (and adjust range if needed)
+    input.oninput = function() {
+        const newVal = parseInt(this.value) || 0;
+        // Expand range if value goes outside
+        if (newVal < parseInt(slider.min)) {
+            slider.min = Math.max(0, Math.round(newVal * 0.5));
+        }
+        if (newVal > parseInt(slider.max)) {
+            slider.max = Math.round(newVal * 1.5);
+        }
+        slider.value = newVal;
+    };
+}
+
+/**
+ * Close meal edit modal
+ * @param {boolean} deleteMeal - If true and mode is 'new', delete the meal
+ */
+function closeMealEditModal(deleteMeal = false) {
+    const modal = document.getElementById('mealEditModal');
+    const mode = document.getElementById('editMealMode').value;
+    const mealId = document.getElementById('editMealId').value;
+
+    // If closing new meal modal without saving, delete the meal
+    if (mode === 'new' && mealId && deleteMeal !== false) {
+        deleteMealSilent(mealId);
+    }
+
+    modal.classList.remove('active');
+}
+
+/**
+ * Save meal edit
+ */
+async function saveMealEdit() {
+    const mode = document.getElementById('editMealMode').value;
+    const mealId = document.getElementById('editMealId').value;
+
+    const mealData = {
+        name: document.getElementById('editMealName').value.trim(),
+        calories: parseInt(document.getElementById('editMealCalories').value) || 0,
+        protein: parseFloat(document.getElementById('editMealProtein').value) || 0,
+        carbs: parseFloat(document.getElementById('editMealCarbs').value) || 0,
+        fat: parseFloat(document.getElementById('editMealFat').value) || 0
+    };
+
+    // Validate
+    if (!mealData.name) {
+        alert('Zadejte název jídla');
+        return;
+    }
+
+    if (!AppState.currentUser) {
+        alert('Nejste přihlášen');
+        return;
+    }
+
+    try {
+        const dateString = getSelectedDateString();
+
+        if (mode === 'new') {
+            // For new meal, it's already saved - just update it
+            await updateMealInFirestore(AppState.currentUser.uid, mealId, mealData, dateString);
+        } else {
+            // Update existing meal
+            await updateMealInFirestore(AppState.currentUser.uid, mealId, mealData, dateString);
+        }
+
+        console.log('✅ Meal saved successfully');
+
+        // Close modal without deleting
+        const modal = document.getElementById('mealEditModal');
+        modal.classList.remove('active');
+
+    } catch (error) {
+        console.error('Error saving meal:', error);
+        alert('Chyba při ukládání jídla');
+    }
+}
+
+/**
+ * Delete meal from edit modal
+ */
+async function deleteMealFromEdit() {
+    const mealId = document.getElementById('editMealId').value;
+
+    if (!confirm('Opravdu chcete smazat toto jídlo?')) {
+        return;
+    }
+
+    try {
+        const dateString = getSelectedDateString();
+        await deleteMealFromFirestore(AppState.currentUser.uid, mealId, dateString);
+        console.log('✅ Meal deleted from edit modal');
+
+        // Close modal
+        const modal = document.getElementById('mealEditModal');
+        modal.classList.remove('active');
+
+    } catch (error) {
+        console.error('Error deleting meal:', error);
+        alert('Chyba při mazání jídla');
+    }
+}
+
+/**
+ * Delete meal silently (without confirmation)
+ */
+async function deleteMealSilent(mealId) {
+    if (!AppState.currentUser || !mealId) return;
+
+    try {
+        const dateString = getSelectedDateString();
+        await deleteMealFromFirestore(AppState.currentUser.uid, mealId, dateString);
+        console.log('✅ Meal deleted silently:', mealId);
+    } catch (error) {
+        console.error('Error deleting meal silently:', error);
     }
 }
 

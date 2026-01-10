@@ -398,6 +398,36 @@ async function deleteMealFromFirestore(userId, mealId, dateString = null) {
 }
 
 /**
+ * Update an existing meal
+ * @param {string} userId - User ID
+ * @param {string} mealId - Meal document ID
+ * @param {Object} mealData - Updated meal data (name, calories, protein, carbs, fat)
+ * @param {string} dateString - Optional date string (YYYY-MM-DD), defaults to today
+ * @returns {Promise<void>}
+ */
+async function updateMealInFirestore(userId, mealId, mealData, dateString = null) {
+    try {
+        if (!dateString) {
+            dateString = getTodayDateString();
+        }
+        const mealRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items').doc(mealId);
+
+        await mealRef.update({
+            name: mealData.name,
+            calories: mealData.calories,
+            protein: mealData.protein,
+            carbs: mealData.carbs,
+            fat: mealData.fat,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        console.log('✅ Meal updated:', mealId, 'for date:', dateString);
+    } catch (error) {
+        console.error('Error updating meal:', error);
+        throw error;
+    }
+}
+
+/**
  * Listen to real-time updates for today's meals
  * @param {string} userId - User ID
  * @param {Function} callback - Callback function to receive meals array

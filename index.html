@@ -201,6 +201,54 @@
             </div>
         </div>
 
+        <!-- Meal Edit Modal -->
+        <div id="mealEditModal" class="modal">
+            <div class="modal-overlay" onclick="closeMealEditModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button id="mealEditDeleteBtn" class="btn-delete-icon" onclick="deleteMealFromEdit()" style="display: none;">🗑️</button>
+                    <h2 id="mealEditTitle">Upravit jídlo</h2>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editMealId">
+                    <input type="hidden" id="editMealMode">
+
+                    <div class="form-group">
+                        <label for="editMealName">Název jídla:</label>
+                        <input type="text" id="editMealName" placeholder="Např. Kuřecí řízek s rýží">
+                    </div>
+
+                    <div class="form-group calories-group">
+                        <label for="editMealCalories">Kalorie (kcal):</label>
+                        <input type="range" id="editMealCaloriesSlider" min="0" max="500" value="250" class="calories-slider">
+                        <input type="number" id="editMealCalories" placeholder="500" min="0" max="5000">
+                    </div>
+
+                    <div class="meal-edit-macros">
+                        <div class="macro-input">
+                            <span class="macro-icon">🥩</span>
+                            <input type="number" id="editMealProtein" placeholder="0" min="0" max="500" step="0.1">
+                            <span class="macro-unit">g</span>
+                        </div>
+                        <div class="macro-input">
+                            <span class="macro-icon">🌾</span>
+                            <input type="number" id="editMealCarbs" placeholder="0" min="0" max="500" step="0.1">
+                            <span class="macro-unit">g</span>
+                        </div>
+                        <div class="macro-input">
+                            <span class="macro-icon">🥑</span>
+                            <input type="number" id="editMealFat" placeholder="0" min="0" max="500" step="0.1">
+                            <span class="macro-unit">g</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer-actions">
+                    <button id="mealEditCancelBtn" class="btn-secondary" onclick="closeMealEditModal()">Zrušit</button>
+                    <button id="mealEditSaveBtn" class="btn-primary" onclick="saveMealEdit()">Uložit</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Vstupní formulář -->
         <section class="input-section">
             <h2>Přidat jídlo</h2>
@@ -314,9 +362,9 @@
                     <div class="macro-box-label">Bílkoviny</div>
                     <div class="macro-box-percent" id="proteinPercent">0%</div>
                     <div class="macro-box-value">
-                        <span id="totalProtein">0</span>g
+                        <span id="totalProtein">0</span> g
                     </div>
-                    <div class="macro-box-goal" id="proteinGoal">z 0g</div>
+                    <div class="macro-box-goal" id="proteinGoal">z 0 g</div>
                 </div>
 
                 <!-- Sacharidy -->
@@ -325,9 +373,9 @@
                     <div class="macro-box-label">Sacharidy</div>
                     <div class="macro-box-percent" id="carbsPercent">0%</div>
                     <div class="macro-box-value">
-                        <span id="totalCarbs">0</span>g
+                        <span id="totalCarbs">0</span> g
                     </div>
-                    <div class="macro-box-goal" id="carbsGoal">z 0g</div>
+                    <div class="macro-box-goal" id="carbsGoal">z 0 g</div>
                 </div>
 
                 <!-- Tuky -->
@@ -336,9 +384,9 @@
                     <div class="macro-box-label">Tuky</div>
                     <div class="macro-box-percent" id="fatPercent">0%</div>
                     <div class="macro-box-value">
-                        <span id="totalFat">0</span>g
+                        <span id="totalFat">0</span> g
                     </div>
-                    <div class="macro-box-goal" id="fatGoal">z 0g</div>
+                    <div class="macro-box-goal" id="fatGoal">z 0 g</div>
                 </div>
             </div>
 
