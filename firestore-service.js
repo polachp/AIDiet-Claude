@@ -552,6 +552,215 @@ async function getRemainingApiCalls(userId) {
     }
 }
 
+// ==================== FOOD HISTORY & FAVORITES ====================
+
+/**
+ * Get favorite foods for user
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of favorite food objects
+ */
+async function getFavoriteFoods(userId) {
+    try {
+        const favoritesRef = db.collection('users').doc(userId).collection('favorites');
+        const snapshot = await favoritesRef.orderBy('addedAt', 'desc').get();
+
+        const favorites = [];
+        snapshot.forEach(doc => {
+            favorites.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        return favorites;
+    } catch (error) {
+        console.error('Error fetching favorites:', error);
+        return [];
+    }
+}
+
+/**
+ * Add food to favorites
+ * @param {string} userId - User ID
+ * @param {Object} foodData - {name, calories, protein, carbs, fat}
+ * @returns {Promise<string>} Document ID
+ */
+async function addFavoriteFood(userId, foodData) {
+    try {
+        const favoritesRef = db.collection('users').doc(userId).collection('favorites');
+
+        // Check if already exists (by name, case-insensitive)
+        const existing = await favoritesRef
+            .where('nameLower', '==', foodData.name.toLowerCase())
+            .get();
+
+        if (!existing.empty) {
+            // Update existing favorite
+            const docId = existing.docs[0].id;
+            await favoritesRef.doc(docId).update({
+                ...foodData,
+                nameLower: foodData.name.toLowerCase(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('✅ Favorite updated:', docId);
+            return docId;
+        }
+
+        // Add new favorite
+        const docRef = await favoritesRef.add({
+            ...foodData,
+            nameLower: foodData.name.toLowerCase(),
+            addedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        console.log('✅ Favorite added:', docRef.id);
+        return docRef.id;
+    } catch (error) {
+        console.error('Error adding favorite:', error);
+        throw error;
+    }
+}
+
+/**
+ * Remove food from favorites
+ * @param {string} userId - User ID
+ * @param {string} favoriteId - Favorite document ID
+ * @returns {Promise<void>}
+ */
+async function removeFavoriteFood(userId, favoriteId) {
+    try {
+        await db.collection('users').doc(userId).collection('favorites').doc(favoriteId).delete();
+        console.log('✅ Favorite removed:', favoriteId);
+    } catch (error) {
+        console.error('Error removing favorite:', error);
+        throw error;
+    }
+}
+
+/**
+ * Check if food is in favorites (by name)
+ * @param {string} userId - User ID
+ * @param {string} foodName - Food name
+ * @returns {Promise<{isFavorite: boolean, favoriteId: string|null}>}
+ */
+async function checkIsFavorite(userId, foodName) {
+    try {
+        const favoritesRef = db.collection('users').doc(userId).collection('favorites');
+        const snapshot = await favoritesRef
+            .where('nameLower', '==', foodName.toLowerCase())
+            .limit(1)
+            .get();
+
+        if (snapshot.empty) {
+            return { isFavorite: false, favoriteId: null };
+        }
+
+        return { isFavorite: true, favoriteId: snapshot.docs[0].id };
+    } catch (error) {
+        console.error('Error checking favorite:', error);
+        return { isFavorite: false, favoriteId: null };
+    }
+}
+
+/**
+ * Get food history (last 10 unique foods)
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of recent food objects
+ */
+async function getFoodHistory(userId) {
+    try {
+        const historyRef = db.collection('users').doc(userId).collection('foodHistory');
+        const snapshot = await historyRef.orderBy('lastUsed', 'desc').limit(10).get();
+
+        const history = [];
+        snapshot.forEach(doc => {
+            history.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        return history;
+    } catch (error) {
+        console.error('Error fetching food history:', error);
+        return [];
+    }
+}
+
+/**
+ * Add or update food in history
+ * Called when a meal is added
+ * @param {string} userId - User ID
+ * @param {Object} foodData - {name, calories, protein, carbs, fat}
+ * @returns {Promise<void>}
+ */
+async function updateFoodHistory(userId, foodData) {
+    try {
+        const historyRef = db.collection('users').doc(userId).collection('foodHistory');
+
+        // Check if food already exists in history (by name)
+        const existing = await historyRef
+            .where('nameLower', '==', foodData.name.toLowerCase())
+            .get();
+
+        if (!existing.empty) {
+            // Update existing entry
+            const docId = existing.docs[0].id;
+            await historyRef.doc(docId).update({
+                ...foodData,
+                nameLower: foodData.name.toLowerCase(),
+                lastUsed: firebase.firestore.FieldValue.serverTimestamp(),
+                useCount: firebase.firestore.FieldValue.increment(1)
+            });
+        } else {
+            // Add new entry
+            await historyRef.add({
+                ...foodData,
+                nameLower: foodData.name.toLowerCase(),
+                lastUsed: firebase.firestore.FieldValue.serverTimestamp(),
+                useCount: 1
+            });
+
+            // Clean up old history entries (keep only 10)
+            await cleanupFoodHistory(userId);
+        }
+    } catch (error) {
+        console.error('Error updating food history:', error);
+        // Non-critical - don't throw
+    }
+}
+
+/**
+ * Clean up food history to keep only 10 entries
+ * @param {string} userId - User ID
+ */
+async function cleanupFoodHistory(userId) {
+    try {
+        const historyRef = db.collection('users').doc(userId).collection('foodHistory');
+        const snapshot = await historyRef.orderBy('lastUsed', 'desc').get();
+
+        if (snapshot.size > 10) {
+            const toDelete = [];
+            let count = 0;
+            snapshot.forEach(doc => {
+                count++;
+                if (count > 10) {
+                    toDelete.push(doc.ref);
+                }
+            });
+
+            // Delete in batch
+            const batch = db.batch();
+            toDelete.forEach(ref => batch.delete(ref));
+            await batch.commit();
+
+            console.log(`✅ Cleaned up ${toDelete.length} old history entries`);
+        }
+    } catch (error) {
+        console.error('Error cleaning up food history:', error);
+    }
+}
+
 // ==================== INITIALIZATION ====================
 
 /**

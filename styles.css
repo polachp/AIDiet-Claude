@@ -2130,3 +2130,239 @@ a:focus-visible {
 .mb-md { margin-bottom: var(--space-md); }
 .mb-lg { margin-bottom: var(--space-lg); }
 .mb-xl { margin-bottom: var(--space-xl); }
+
+/* ==================== INPUT SECTION HEADER ==================== */
+
+.input-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-lg) var(--space-lg) var(--space-md);
+    position: relative;
+}
+
+.input-section-header h2 {
+    margin: 0;
+    padding: 0;
+}
+
+.quick-add-buttons {
+    display: flex;
+    gap: var(--space-sm);
+    position: absolute;
+    right: var(--space-lg);
+}
+
+.quick-add-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+    min-height: 40px;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.quick-add-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--ios-blue);
+    color: var(--ios-blue);
+    transform: scale(1.05);
+}
+
+.quick-add-btn:active {
+    transform: scale(0.95);
+}
+
+.quick-add-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ==================== FOOD HISTORY/FAVORITES MODAL ==================== */
+
+.food-modal-tabs {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+}
+
+.food-modal-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 44px;
+}
+
+.food-modal-tab:hover {
+    color: var(--text-primary);
+}
+
+.food-modal-tab.active {
+    background: var(--bg-elevated);
+    color: var(--ios-blue);
+    box-shadow: var(--shadow-sm);
+}
+
+.food-modal-tab svg {
+    width: 16px;
+    height: 16px;
+}
+
+.food-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+}
+
+.food-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--separator);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.food-item:last-child {
+    border-bottom: none;
+}
+
+.food-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.food-item:active {
+    background: var(--ios-gray-extralight);
+}
+
+.food-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.food-item-name {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.food-item-macros {
+    font-size: 13px;
+    color: var(--text-tertiary);
+}
+
+.food-item-delete {
+    background: transparent;
+    color: var(--ios-red);
+    border: none;
+    font-size: 18px;
+    font-weight: 600;
+    padding: var(--space-sm);
+    min-height: 36px;
+    min-width: 36px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-left: var(--space-md);
+}
+
+.food-item-delete:hover {
+    background: rgba(255, 59, 48, 0.1);
+}
+
+/* ==================== FAVORITE BUTTON IN MEAL EDIT MODAL ==================== */
+
+.btn-favorite {
+    position: absolute;
+    right: var(--space-lg);
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: var(--space-sm);
+    min-height: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    color: var(--ios-gray);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-favorite:hover {
+    color: var(--ios-orange);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.btn-favorite.is-favorite {
+    color: #FFD60A;
+}
+
+.btn-favorite.is-favorite:hover {
+    color: #FFD60A;
+}
+
+.btn-favorite svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* ==================== RESPONSIVE - MOBILE ==================== */
+
+@media (max-width: 768px) {
+    .input-section-header {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .quick-add-buttons {
+        position: static;
+        margin-top: var(--space-sm);
+    }
+
+    .food-list {
+        max-height: 350px;
+    }
+
+    .food-item {
+        padding: var(--space-md);
+    }
+
+    .food-item-name {
+        font-size: 16px;
+    }
+
+    .food-item-macros {
+        font-size: 12px;
+    }
+}

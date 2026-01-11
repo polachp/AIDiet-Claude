@@ -1364,7 +1364,7 @@ function showInlineLoading(elementId, show) {
  * @param {string} mode - 'edit' for existing meal, 'new' for newly added meal
  * @param {Object} meal - Meal data (id, name, calories, protein, carbs, fat)
  */
-function openMealEditModal(mode, meal) {
+async function openMealEditModal(mode, meal) {
     const modal = document.getElementById('mealEditModal');
     const title = document.getElementById('mealEditTitle');
     const deleteBtn = document.getElementById('mealEditDeleteBtn');
@@ -1401,6 +1401,9 @@ function openMealEditModal(mode, meal) {
         cancelBtn.textContent = 'Zrušit';
         deleteBtn.style.display = 'none';
     }
+
+    // Check favorite status
+    await checkMealFavoriteStatus(meal.name);
 
     // Show modal
     modal.classList.add('active');
@@ -1528,6 +1531,9 @@ async function saveMealEdit() {
             await updateMealInFirestore(AppState.currentUser.uid, mealId, mealData, dateString);
         }
 
+        // Update food history
+        await updateFoodHistory(AppState.currentUser.uid, mealData);
+
         console.log('✅ Meal saved successfully');
 
         // Close modal without deleting
@@ -1577,6 +1583,234 @@ async function deleteMealSilent(mealId) {
         console.log('✅ Meal deleted silently:', mealId);
     } catch (error) {
         console.error('Error deleting meal silently:', error);
+    }
+}
+
+// =====================================
+// FOOD HISTORY & FAVORITES
+// =====================================
+
+/**
+ * Current state for food history modal
+ */
+let currentFoodModalTab = 'history';
+let currentMealFavoriteId = null;
+
+/**
+ * Open food history modal (shows history tab)
+ */
+function openFoodHistoryModal() {
+    switchFoodModalTab('history');
+    const modal = document.getElementById('foodHistoryModal');
+    modal.classList.add('active');
+}
+
+/**
+ * Open favorites modal (shows favorites tab)
+ */
+function openFavoritesModal() {
+    switchFoodModalTab('favorites');
+    const modal = document.getElementById('foodHistoryModal');
+    modal.classList.add('active');
+}
+
+/**
+ * Close food history modal
+ */
+function closeFoodHistoryModal() {
+    const modal = document.getElementById('foodHistoryModal');
+    modal.classList.remove('active');
+}
+
+/**
+ * Switch between history and favorites tabs
+ */
+async function switchFoodModalTab(tab) {
+    currentFoodModalTab = tab;
+
+    // Update tab buttons
+    const historyTab = document.getElementById('historyTab');
+    const favoritesTab = document.getElementById('favoritesTab');
+    const title = document.getElementById('foodHistoryTitle');
+
+    if (tab === 'history') {
+        historyTab.classList.add('active');
+        favoritesTab.classList.remove('active');
+        title.textContent = 'Historie jídel';
+    } else {
+        historyTab.classList.remove('active');
+        favoritesTab.classList.add('active');
+        title.textContent = 'Oblíbená jídla';
+    }
+
+    // Load data
+    await loadFoodList(tab);
+}
+
+/**
+ * Load food list (history or favorites)
+ */
+async function loadFoodList(type) {
+    const listContainer = document.getElementById('foodHistoryList');
+
+    if (!AppState.currentUser) {
+        listContainer.innerHTML = '<p class="empty-state">Nejste přihlášen</p>';
+        return;
+    }
+
+    listContainer.innerHTML = '<p class="empty-state">Načítám...</p>';
+
+    try {
+        let foods = [];
+        if (type === 'history') {
+            foods = await getFoodHistory(AppState.currentUser.uid);
+        } else {
+            foods = await getFavoriteFoods(AppState.currentUser.uid);
+        }
+
+        if (foods.length === 0) {
+            const emptyMessage = type === 'history'
+                ? 'Zatím žádná historie jídel.'
+                : 'Zatím žádná oblíbená jídla. Přidejte je hvězdičkou při přidání nebo editaci jídla.';
+            listContainer.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+            return;
+        }
+
+        listContainer.innerHTML = foods.map(food => {
+            const foodJson = JSON.stringify(food).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const deleteBtn = type === 'favorites'
+                ? `<button class="food-item-delete" onclick="event.stopPropagation(); removeFavorite('${food.id}')" title="Odebrat z oblíbených">✕</button>`
+                : '';
+
+            return `
+                <div class="food-item" onclick="addFoodFromList(${foodJson})">
+                    <div class="food-item-info">
+                        <div class="food-item-name">${food.name}</div>
+                        <div class="food-item-macros">
+                            ${food.calories} kcal • 🥩 ${food.protein}g • 🌾 ${food.carbs}g • 🥑 ${food.fat}g
+                        </div>
+                    </div>
+                    ${deleteBtn}
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading food list:', error);
+        listContainer.innerHTML = '<p class="empty-state">Chyba při načítání</p>';
+    }
+}
+
+/**
+ * Add food from history/favorites list
+ */
+async function addFoodFromList(food) {
+    closeFoodHistoryModal();
+
+    const nutritionData = {
+        name: food.name,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat
+    };
+
+    await addMeal(nutritionData);
+}
+
+/**
+ * Remove favorite food
+ */
+async function removeFavorite(favoriteId) {
+    if (!AppState.currentUser) return;
+
+    try {
+        await removeFavoriteFood(AppState.currentUser.uid, favoriteId);
+        // Reload the list
+        await loadFoodList('favorites');
+    } catch (error) {
+        console.error('Error removing favorite:', error);
+        alert('Chyba při odebírání z oblíbených');
+    }
+}
+
+/**
+ * Toggle meal favorite status in edit modal
+ */
+async function toggleMealFavorite() {
+    if (!AppState.currentUser) return;
+
+    const mealName = document.getElementById('editMealName').value.trim();
+    if (!mealName) {
+        alert('Zadejte nejprve název jídla');
+        return;
+    }
+
+    const mealData = {
+        name: mealName,
+        calories: parseInt(document.getElementById('editMealCalories').value) || 0,
+        protein: parseFloat(document.getElementById('editMealProtein').value) || 0,
+        carbs: parseFloat(document.getElementById('editMealCarbs').value) || 0,
+        fat: parseFloat(document.getElementById('editMealFat').value) || 0
+    };
+
+    try {
+        if (currentMealFavoriteId) {
+            // Remove from favorites
+            await removeFavoriteFood(AppState.currentUser.uid, currentMealFavoriteId);
+            currentMealFavoriteId = null;
+            updateFavoriteIcon(false);
+        } else {
+            // Add to favorites
+            const id = await addFavoriteFood(AppState.currentUser.uid, mealData);
+            currentMealFavoriteId = id;
+            updateFavoriteIcon(true);
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        alert('Chyba při změně oblíbených');
+    }
+}
+
+/**
+ * Update favorite icon in edit modal
+ */
+function updateFavoriteIcon(isFavorite) {
+    const outlineIcon = document.getElementById('favoriteIconOutline');
+    const filledIcon = document.getElementById('favoriteIconFilled');
+    const btn = document.getElementById('mealFavoriteBtn');
+
+    if (isFavorite) {
+        outlineIcon.style.display = 'none';
+        filledIcon.style.display = 'block';
+        btn.classList.add('is-favorite');
+        btn.title = 'Odebrat z oblíbených';
+    } else {
+        outlineIcon.style.display = 'block';
+        filledIcon.style.display = 'none';
+        btn.classList.remove('is-favorite');
+        btn.title = 'Přidat do oblíbených';
+    }
+}
+
+/**
+ * Check favorite status when opening meal edit modal
+ */
+async function checkMealFavoriteStatus(mealName) {
+    if (!AppState.currentUser || !mealName) {
+        currentMealFavoriteId = null;
+        updateFavoriteIcon(false);
+        return;
+    }
+
+    try {
+        const { isFavorite, favoriteId } = await checkIsFavorite(AppState.currentUser.uid, mealName);
+        currentMealFavoriteId = favoriteId;
+        updateFavoriteIcon(isFavorite);
+    } catch (error) {
+        console.error('Error checking favorite status:', error);
+        currentMealFavoriteId = null;
+        updateFavoriteIcon(false);
     }
 }
 

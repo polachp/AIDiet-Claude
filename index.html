@@ -201,6 +201,40 @@
             </div>
         </div>
 
+        <!-- Food History/Favorites Modal -->
+        <div id="foodHistoryModal" class="modal">
+            <div class="modal-overlay" onclick="closeFoodHistoryModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="foodHistoryTitle">Historie jídel</h2>
+                    <button class="modal-close" onclick="closeFoodHistoryModal()">Zavřít</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tabs for History/Favorites -->
+                    <div class="food-modal-tabs">
+                        <button class="food-modal-tab active" id="historyTab" onclick="switchFoodModalTab('history')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Historie
+                        </button>
+                        <button class="food-modal-tab" id="favoritesTab" onclick="switchFoodModalTab('favorites')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Oblíbené
+                        </button>
+                    </div>
+
+                    <!-- Food List -->
+                    <div id="foodHistoryList" class="food-list">
+                        <p class="empty-state">Načítám...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Meal Edit Modal -->
         <div id="mealEditModal" class="modal">
             <div class="modal-overlay" onclick="closeMealEditModal()"></div>
@@ -208,6 +242,14 @@
                 <div class="modal-header">
                     <button id="mealEditDeleteBtn" class="btn-delete-icon" onclick="deleteMealFromEdit()" style="display: none;">🗑️</button>
                     <h2 id="mealEditTitle">Upravit jídlo</h2>
+                    <button id="mealFavoriteBtn" class="btn-favorite" onclick="toggleMealFavorite()" title="Přidat do oblíbených">
+                        <svg id="favoriteIconOutline" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <svg id="favoriteIconFilled" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                        </svg>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="editMealId">
@@ -251,7 +293,22 @@
 
         <!-- Vstupní formulář -->
         <section class="input-section">
-            <h2>Přidat jídlo</h2>
+            <div class="input-section-header">
+                <h2>Přidat jídlo</h2>
+                <div class="quick-add-buttons">
+                    <button class="quick-add-btn" onclick="openFoodHistoryModal()" title="Historie jídel">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="quick-add-btn" onclick="openFavoritesModal()" title="Oblíbená jídla">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
             <!-- Tab menu - iOS Segmented Control Style -->
             <div class="tabs">
