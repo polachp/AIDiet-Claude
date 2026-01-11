@@ -47,6 +47,7 @@ async function initializeApp(user) {
         updateCurrentDate();
         updateSummary();
         updateWeeklyTrend();
+        updateGreeting();
 
         // Setup meals listener last (will trigger UI updates)
         setupMealsListener();
@@ -813,6 +814,21 @@ function switchTab(tabName, event) {
 }
 
 /**
+ * Update greeting section with user name
+ */
+function updateGreeting() {
+    const greetingName = document.getElementById('userGreetingName');
+    if (greetingName && AppState.currentUser) {
+        // Try to get display name from Firebase, or use email prefix
+        let name = AppState.currentUser.displayName;
+        if (!name && AppState.currentUser.email) {
+            name = AppState.currentUser.email.split('@')[0];
+        }
+        greetingName.textContent = name || 'uživateli';
+    }
+}
+
+/**
  * Update summary display
  */
 function updateSummary() {
@@ -828,7 +844,9 @@ function updateSummary() {
     totals.carbs = Math.round(totals.carbs);
     totals.fat = Math.round(totals.fat);
 
-    document.getElementById('totalCalories').textContent = totals.calories;
+    // Round to tens for display
+    const displayCalories = Math.round(totals.calories / 10) * 10;
+    document.getElementById('totalCalories').textContent = displayCalories;
 
     if (AppState.dailyGoals) {
         // Displayed percentage: relative to goal (100% = goal achieved)
@@ -842,7 +860,9 @@ function updateSummary() {
 
         const caloriesPercentageEl = document.getElementById('caloriesPercentage');
         caloriesPercentageEl.textContent = caloriesPercent + '%';
-        document.getElementById('caloriesGoalValue').textContent = AppState.dailyGoals.calories;
+        // Round goal to tens for display
+        const displayGoal = Math.round(AppState.dailyGoals.calories / 10) * 10;
+        document.getElementById('caloriesGoalValue').textContent = displayGoal;
 
         const progressFill = document.getElementById('caloriesProgressFill');
         // Progress bar width based on TDEE (can go up to 100% = TDEE)

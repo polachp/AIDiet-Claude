@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Track your calories with AI-powered food analysis">
-    <meta name="theme-color" content="#007AFF">
-    <title>AI Calories Counter</title>
+    <meta name="theme-color" content="#0A0E1A">
+    <title>AI Diet</title>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="icon-192.png">
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
     <!-- Authentication Screen (hidden until auth state is determined) -->
@@ -20,7 +20,7 @@
         <div class="auth-container">
             <div class="auth-header">
                  <img src="favicon.svg" alt="Logo" class="header-logo">
-                <h1>AI Calories Counter <span id="authEnvBadge" class="env-badge" style="display: none;"></span></h1>
+                <h1>AI Diet <span id="authEnvBadge" class="env-badge" style="display: none;"></span></h1>
             </div>
 
             <!-- Login Form -->
@@ -92,8 +92,7 @@
     <div id="mainApp" class="container" style="display: none;">
         <header>
             <h1>
-                <img src="favicon.svg" alt="Logo" class="header-logo">
-                AI Calories Counter <span id="mainEnvBadge" class="env-badge" style="display: none;"></span>
+                AI Diet <span id="mainEnvBadge" class="env-badge" style="display: none;"></span>
             </h1>
             <button class="menu-btn" id="menuBtn" onclick="toggleMenu()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -321,15 +320,18 @@
             <div id="textTab" class="tab-content active">
                 <div class="form-group">
                     <input type="text" id="textInput" placeholder="Např.: 'dva rohlíky s máslem a šunkou, jogurt'" />
-                    <button onclick="analyzeText()" class="btn-primary" style="margin-top: 12px;">🔍 Analyzovat</button>
+                    <button onclick="analyzeText()" class="btn-primary" style="margin-top: 12px;">Spočítat kalorie</button>
                 </div>
             </div>
 
             <!-- Foto vstup -->
             <div id="photoTab" class="tab-content">
                 <div class="form-group">
-                    <input type="file" id="photoInput" accept="image/*" capture="environment">
-                    <small>📸 Foto se automaticky analyzuje po výběru</small>
+                    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
+                    <label for="photoInput" class="photo-upload-btn">
+                        <span class="photo-upload-icon">📷</span>
+                        <span class="photo-upload-text">Vybrat nebo vyfotit jídlo</span>
+                    </label>
                     <div id="photoPreview" class="photo-preview"></div>
                     <div id="photoLoading" class="inline-loading" style="display: none;">
                         <div class="spinner-small"></div>
@@ -411,39 +413,45 @@
                 </div>
             </div>
 
-            <!-- Makroživiny - minimalistické boxy -->
+            <!-- Makroživiny - kompaktní řádky -->
             <div class="macros-grid">
                 <!-- Bílkoviny -->
                 <div class="macro-box" data-macro="protein">
-                    <div class="macro-box-icon">🥩</div>
-                    <div class="macro-box-label">Bílkoviny</div>
-                    <div class="macro-box-percent" id="proteinPercent">0%</div>
-                    <div class="macro-box-value">
-                        <span id="totalProtein">0</span> g
+                    <div class="macro-box-left">
+                        <span class="macro-box-icon">🥩</span>
+                        <span class="macro-box-label">Bílkoviny</span>
                     </div>
-                    <div class="macro-box-goal" id="proteinGoal">z 0 g</div>
+                    <div class="macro-box-right">
+                        <span class="macro-box-percent" id="proteinPercent">0%</span>
+                        <span class="macro-box-value"><span id="totalProtein">0</span>g</span>
+                    </div>
+                    <span class="macro-box-goal" id="proteinGoal">z 0 g</span>
                 </div>
 
                 <!-- Sacharidy -->
                 <div class="macro-box" data-macro="carbs">
-                    <div class="macro-box-icon">🌾</div>
-                    <div class="macro-box-label">Sacharidy</div>
-                    <div class="macro-box-percent" id="carbsPercent">0%</div>
-                    <div class="macro-box-value">
-                        <span id="totalCarbs">0</span> g
+                    <div class="macro-box-left">
+                        <span class="macro-box-icon">🌾</span>
+                        <span class="macro-box-label">Sacharidy</span>
                     </div>
-                    <div class="macro-box-goal" id="carbsGoal">z 0 g</div>
+                    <div class="macro-box-right">
+                        <span class="macro-box-percent" id="carbsPercent">0%</span>
+                        <span class="macro-box-value"><span id="totalCarbs">0</span>g</span>
+                    </div>
+                    <span class="macro-box-goal" id="carbsGoal">z 0 g</span>
                 </div>
 
                 <!-- Tuky -->
                 <div class="macro-box" data-macro="fat">
-                    <div class="macro-box-icon">🥑</div>
-                    <div class="macro-box-label">Tuky</div>
-                    <div class="macro-box-percent" id="fatPercent">0%</div>
-                    <div class="macro-box-value">
-                        <span id="totalFat">0</span> g
+                    <div class="macro-box-left">
+                        <span class="macro-box-icon">🥑</span>
+                        <span class="macro-box-label">Tuky</span>
                     </div>
-                    <div class="macro-box-goal" id="fatGoal">z 0 g</div>
+                    <div class="macro-box-right">
+                        <span class="macro-box-percent" id="fatPercent">0%</span>
+                        <span class="macro-box-value"><span id="totalFat">0</span>g</span>
+                    </div>
+                    <span class="macro-box-goal" id="fatGoal">z 0 g</span>
                 </div>
             </div>
 
