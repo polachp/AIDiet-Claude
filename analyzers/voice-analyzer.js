@@ -46,15 +46,10 @@ class VoiceAnalyzer {
 
         } catch (error) {
             console.error('❌ VoiceAnalyzer: Chyba při analýze:', error);
-
-            // Propaguj AbortError beze změny
-            if (error.name === 'AbortError') {
-                throw error;
-            }
-
-            // Přeložení chyb do češtiny
-            const czechError = this._translateError(error);
-            throw new Error(czechError);
+            throw ErrorTranslator.handleError(
+                error,
+                'Nepodařilo se analyzovat hlasový vstup. Zkuste to prosím znovu.'
+            );
         }
     }
 
@@ -77,51 +72,14 @@ class VoiceAnalyzer {
             throw new Error('Audio soubor je prázdný');
         }
 
-        // Kontrola maximální velikosti (např. 10MB)
-        const maxSizeBytes = 10 * 1024 * 1024;
+        // Kontrola maximální velikosti (10MB)
+        const maxSizeMB = 10;
+        const maxSizeBytes = maxSizeMB * 1024 * 1024;
         if (audioBlob.size > maxSizeBytes) {
-            throw new Error(`Audio soubor je příliš velký (maximum ${Math.round(maxSizeBytes / 1024 / 1024)}MB)`);
+            throw new Error(`Audio soubor je príliš velký (maximum ${maxSizeMB}MB)`);
         }
 
         console.log(`✅ VoiceAnalyzer: Audio blob validní (${Math.round(audioBlob.size / 1024)}KB, typ: ${audioBlob.type || 'neznámý'})`);
-    }
-
-    /**
-     * Přeloží anglické chybové hlášky do češtiny
-     * @private
-     * @param {Error} error - Původní chyba
-     * @returns {string} České chybové hlášení
-     */
-    _translateError(error) {
-        const errorMessage = error.message.toLowerCase();
-
-        // Překlad běžných chybových hlášek
-        if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-            return 'Chyba připojení k síti. Zkontrolujte internetové připojení.';
-        }
-
-        if (errorMessage.includes('timeout')) {
-            return 'Analýza trvala příliš dlouho. Zkuste to prosím znovu.';
-        }
-
-        if (errorMessage.includes('rate limit') || errorMessage.includes('quota')) {
-            return 'Byl překročen denní limit API požadavků. Zkuste to zítra.';
-        }
-
-        if (errorMessage.includes('api key') || errorMessage.includes('unauthorized')) {
-            return 'Chyba autorizace API. Kontaktujte správce systému.';
-        }
-
-        if (errorMessage.includes('audio') || errorMessage.includes('blob')) {
-            return error.message; // Už je v češtině z validace
-        }
-
-        if (errorMessage.includes('parse') || errorMessage.includes('json')) {
-            return 'Nepodařilo se rozpoznat jídlo z hlasové nahrávky. Zkuste to znovu s jasnějším popisem.';
-        }
-
-        // Pokud nemáme překlad, vrátíme originální hlášku
-        return error.message || 'Neznámá chyba při analýze hlasového vstupu';
     }
 
     /**

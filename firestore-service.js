@@ -160,6 +160,55 @@ async function saveUserProfile(userId, profileData) {
     }
 }
 
+// BMR coefficients (Oxford/Henry equation - 2005)
+// Format: [multiplier, constant] for each age bracket
+const BMR_COEFFICIENTS = {
+    male: {
+        30: [16.0, 545],   // age < 30
+        60: [14.2, 593],   // age 30-59
+        70: [13.0, 567],   // age 60-69
+        Infinity: [13.7, 481]  // age 70+
+    },
+    female: {
+        30: [13.1, 558],   // age < 30
+        60: [9.74, 694],   // age 30-59
+        70: [10.2, 572],   // age 60-69
+        Infinity: [10.0, 577]  // age 70+
+    }
+};
+
+// Goal to TDEE percentage mapping
+const GOAL_PERCENTAGES = {
+    'loss-mild': 0.90,      // -10%
+    'loss-moderate': 0.85,  // -15%
+    'loss-aggressive': 0.80, // -20%
+    'maintain': 1.0          // 0%
+};
+
+/**
+ * Calculate BMR using Oxford/Henry equation
+ * @param {string} gender - 'male' or 'female'
+ * @param {number} age - Age in years
+ * @param {number} weight - Weight in kg
+ * @returns {number} BMR in kcal
+ */
+function calculateBMR(gender, age, weight) {
+    const coefficients = BMR_COEFFICIENTS[gender] || BMR_COEFFICIENTS.female;
+    const ageBrackets = Object.keys(coefficients).map(Number).sort((a, b) => a - b);
+
+    for (const bracket of ageBrackets) {
+        if (age < bracket) {
+            const [multiplier, constant] = coefficients[bracket];
+            return multiplier * weight + constant;
+        }
+    }
+
+    // Fallback to last bracket
+    const lastBracket = ageBrackets[ageBrackets.length - 1];
+    const [multiplier, constant] = coefficients[lastBracket];
+    return multiplier * weight + constant;
+}
+
 /**
  * Calculate daily goals from profile data
  * @param {Object} profile - {age, gender, weight, height, activity, goal}
@@ -169,53 +218,13 @@ function calculateDailyGoalsFromProfile(profile) {
     const { age, gender, weight, activity, goal = 'maintain' } = profile;
 
     // BMR calculation (Oxford/Henry equation - 2005)
-    // More accurate than Mifflin-St Jeor, based on 10,552 measurements worldwide
-    let bmr;
-
-    if (gender === 'male') {
-        // Male Oxford/Henry equations by age group
-        if (age < 30) {
-            bmr = 16.0 * weight + 545;
-        } else if (age < 60) {
-            bmr = 14.2 * weight + 593;
-        } else if (age < 70) {
-            bmr = 13.0 * weight + 567;
-        } else {
-            bmr = 13.7 * weight + 481;
-        }
-    } else {
-        // Female Oxford/Henry equations by age group
-        if (age < 30) {
-            bmr = 13.1 * weight + 558;
-        } else if (age < 60) {
-            bmr = 9.74 * weight + 694;
-        } else if (age < 70) {
-            bmr = 10.2 * weight + 572;
-        } else {
-            bmr = 10.0 * weight + 577;
-        }
-    }
+    const bmr = calculateBMR(gender, age, weight);
 
     // TDEE = BMR * activity factor (maintenance calories)
     const tdee = Math.round(bmr * parseFloat(activity));
 
     // Apply percentage-based calorie adjustment based on goal
-    let tdeePercentage = 1.0; // 100% = maintain
-    switch (goal) {
-        case 'loss-mild':
-            tdeePercentage = 0.90; // -10%
-            break;
-        case 'loss-moderate':
-            tdeePercentage = 0.85; // -15%
-            break;
-        case 'loss-aggressive':
-            tdeePercentage = 0.80; // -20%
-            break;
-        case 'maintain':
-        default:
-            tdeePercentage = 1.0; // 0%
-            break;
-    }
+    const tdeePercentage = GOAL_PERCENTAGES[goal] || 1.0;
 
     // Target calories (TDEE * percentage)
     const targetCalories = Math.round(tdee * tdeePercentage);
@@ -269,16 +278,7 @@ async function getMealsForToday(userId) {
         const dateString = getTodayDateString();
         const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
         const snapshot = await mealsRef.orderBy('timestamp', 'desc').get();
-
-        const meals = [];
-        snapshot.forEach(doc => {
-            meals.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-
-        return meals;
+        return snapshotToArray(snapshot);
     } catch (error) {
         console.error('Error fetching meals:', error);
         throw error;
@@ -428,30 +428,29 @@ async function updateMealInFirestore(userId, mealId, mealData, dateString = null
 }
 
 /**
+ * Convert Firestore snapshot to array of documents with IDs
+ * @param {QuerySnapshot} snapshot - Firestore query snapshot
+ * @returns {Array} Array of document objects with id field
+ */
+function snapshotToArray(snapshot) {
+    const items = [];
+    snapshot.forEach(doc => {
+        items.push({
+            id: doc.id,
+            ...doc.data()
+        });
+    });
+    return items;
+}
+
+/**
  * Listen to real-time updates for today's meals
  * @param {string} userId - User ID
  * @param {Function} callback - Callback function to receive meals array
  * @returns {Function} Unsubscribe function
  */
 function listenToTodayMeals(userId, callback) {
-    const dateString = getTodayDateString();
-    const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
-
-    return mealsRef.orderBy('timestamp', 'desc').onSnapshot(
-        (snapshot) => {
-            const meals = [];
-            snapshot.forEach(doc => {
-                meals.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-            callback(meals);
-        },
-        (error) => {
-            console.error('Error listening to meals:', error);
-        }
-    );
+    return listenToMealsForDate(userId, getTodayDateString(), callback);
 }
 
 /**
@@ -465,19 +464,8 @@ function listenToMealsForDate(userId, dateString, callback) {
     const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
 
     return mealsRef.orderBy('timestamp', 'desc').onSnapshot(
-        (snapshot) => {
-            const meals = [];
-            snapshot.forEach(doc => {
-                meals.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-            callback(meals);
-        },
-        (error) => {
-            console.error('Error listening to meals:', error);
-        }
+        (snapshot) => callback(snapshotToArray(snapshot)),
+        (error) => console.error('Error listening to meals:', error)
     );
 }
 
@@ -563,16 +551,7 @@ async function getFavoriteFoods(userId) {
     try {
         const favoritesRef = db.collection('users').doc(userId).collection('favorites');
         const snapshot = await favoritesRef.orderBy('addedAt', 'desc').get();
-
-        const favorites = [];
-        snapshot.forEach(doc => {
-            favorites.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-
-        return favorites;
+        return snapshotToArray(snapshot);
     } catch (error) {
         console.error('Error fetching favorites:', error);
         return [];
@@ -671,16 +650,7 @@ async function getFoodHistory(userId) {
     try {
         const historyRef = db.collection('users').doc(userId).collection('foodHistory');
         const snapshot = await historyRef.orderBy('lastUsed', 'desc').limit(10).get();
-
-        const history = [];
-        snapshot.forEach(doc => {
-            history.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-
-        return history;
+        return snapshotToArray(snapshot);
     } catch (error) {
         console.error('Error fetching food history:', error);
         return [];

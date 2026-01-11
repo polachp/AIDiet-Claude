@@ -787,11 +787,7 @@ function toggleMenu() {
  */
 function toggleSettings() {
     const settingsModal = document.getElementById('settingsModal');
-    if (settingsModal.classList.contains('active')) {
-        settingsModal.classList.remove('active');
-    } else {
-        settingsModal.classList.add('active');
-    }
+    settingsModal.classList.toggle('active');
 }
 
 /**
@@ -859,25 +855,10 @@ function updateSummary() {
             goalMarker.style.right = 'auto';
         }
 
-        // Color coding - iOS Style
-        // Based on displayed percentage (relative to goal)
-        if (caloriesPercent >= 110) {
-            progressFill.style.background = '#FF3B30'; // iOS Red - exceeded goal significantly
-            caloriesPercentageEl.style.color = '#FFFFFF';
-            caloriesPercentageEl.style.fontWeight = '700';
-        } else if (caloriesPercent >= 95) {
-            progressFill.style.background = '#FF9500'; // iOS Orange - close to goal
-            caloriesPercentageEl.style.color = '#FFFFFF';
-            caloriesPercentageEl.style.fontWeight = '700';
-        } else if (caloriesPercent >= 80) {
-            progressFill.style.background = '#34C759'; // iOS Green - good progress
-            caloriesPercentageEl.style.color = '#FFFFFF';
-            caloriesPercentageEl.style.fontWeight = '600';
-        } else {
-            progressFill.style.background = 'rgba(255, 255, 255, 0.9)'; // White - early progress
-            caloriesPercentageEl.style.color = '#FFFFFF';
-            caloriesPercentageEl.style.fontWeight = '600';
-        }
+        // Color coding - iOS Style based on percentage relative to goal
+        progressFill.style.background = getProgressColor(caloriesPercent);
+        caloriesPercentageEl.style.color = '#FFFFFF';
+        caloriesPercentageEl.style.fontWeight = caloriesPercent >= 95 ? '700' : '600';
 
         updateMacroBox('protein', totals.protein, AppState.dailyGoals.protein);
         updateMacroBox('carbs', totals.carbs, AppState.dailyGoals.carbs);
@@ -900,13 +881,61 @@ function updateSummary() {
     }
 }
 
+// iOS-style progress colors
+const PROGRESS_COLORS = {
+    over: '#FF3B30',    // iOS Red - exceeded goal
+    atGoal: '#FF9500',  // iOS Orange - at goal
+    good: '#34C759',    // iOS Green - good progress
+    early: 'rgba(255, 255, 255, 0.9)' // White - early progress
+};
+
+// Macro-specific colors for normal range
+const MACRO_COLORS = {
+    protein: '#FF6B6B',
+    carbs: '#FFB84D',
+    fat: '#51CF66'
+};
+
+/**
+ * Get progress bar color based on percentage
+ * @param {number} percent - Percentage value
+ * @returns {string} Color value
+ */
+function getProgressColor(percent) {
+    if (percent >= 110) return PROGRESS_COLORS.over;
+    if (percent >= 95) return PROGRESS_COLORS.atGoal;
+    if (percent >= 80) return PROGRESS_COLORS.good;
+    return PROGRESS_COLORS.early;
+}
+
+/**
+ * Get percentage style based on value
+ * @param {number} percent - Percentage value
+ * @param {string} type - Macro type for default color
+ * @returns {Object} Style object with color and fontWeight
+ */
+function getPercentageStyle(percent, type) {
+    if (percent >= 110) {
+        return { color: PROGRESS_COLORS.over, fontWeight: '700' };
+    }
+    if (percent >= 95) {
+        return { color: PROGRESS_COLORS.atGoal, fontWeight: '700' };
+    }
+    if (percent >= 80) {
+        return { color: PROGRESS_COLORS.good, fontWeight: '600' };
+    }
+    // Normal range - use macro-specific color
+    return { color: MACRO_COLORS[type] || 'var(--text-primary)', fontWeight: '700' };
+}
+
 /**
  * Update macro box display
  */
 function updateMacroBox(type, current, goal) {
     const percent = Math.round((current / goal) * 100);
+    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
 
-    const totalElement = document.getElementById(`total${type.charAt(0).toUpperCase() + type.slice(1)}`);
+    const totalElement = document.getElementById(`total${capitalizedType}`);
     const percentElement = document.getElementById(`${type}Percent`);
     const goalElement = document.getElementById(`${type}Goal`);
 
@@ -914,30 +943,10 @@ function updateMacroBox(type, current, goal) {
     if (percentElement) percentElement.textContent = percent + '%';
     if (goalElement) goalElement.textContent = `z ${goal} g`;
 
-    const macroBox = document.querySelector(`.macro-box[data-macro="${type}"]`);
-    if (macroBox) {
-        // iOS design uses color-coded percentages
-        if (percentElement) {
-            if (percent >= 110) {
-                percentElement.style.color = '#FF3B30'; // iOS Red
-                percentElement.style.fontWeight = '700';
-            } else if (percent >= 95) {
-                percentElement.style.color = '#FF9500'; // iOS Orange
-                percentElement.style.fontWeight = '700';
-            } else if (percent >= 80) {
-                percentElement.style.color = '#34C759'; // iOS Green
-                percentElement.style.fontWeight = '600';
-            } else {
-                // Use macro-specific colors for normal range
-                const colors = {
-                    protein: '#FF6B6B',
-                    carbs: '#FFB84D',
-                    fat: '#51CF66'
-                };
-                percentElement.style.color = colors[type] || 'var(--text-primary)';
-                percentElement.style.fontWeight = '700';
-            }
-        }
+    if (percentElement) {
+        const style = getPercentageStyle(percent, type);
+        percentElement.style.color = style.color;
+        percentElement.style.fontWeight = style.fontWeight;
     }
 }
 
@@ -1030,6 +1039,26 @@ async function updateWeeklyTrend() {
 }
 
 /**
+ * Format a Date object to YYYY-MM-DD string using local time
+ * @param {Date} date - Date object
+ * @returns {string} Date string in YYYY-MM-DD format
+ */
+function formatDateString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get today's date as YYYY-MM-DD string
+ * @returns {string} Today's date string
+ */
+function getTodayString() {
+    return formatDateString(new Date());
+}
+
+/**
  * Get current selected date as Date object
  */
 function getSelectedDate() {
@@ -1045,18 +1074,14 @@ function getSelectedDate() {
  * Get current selected date as string (YYYY-MM-DD)
  */
 function getSelectedDateString() {
-    if (AppState.selectedDate) {
-        return AppState.selectedDate;
-    }
-    return new Date().toISOString().split('T')[0];
+    return AppState.selectedDate || getTodayString();
 }
 
 /**
  * Check if selected date is today
  */
 function isSelectedDateToday() {
-    const today = new Date().toISOString().split('T')[0];
-    return getSelectedDateString() === today;
+    return getSelectedDateString() === getTodayString();
 }
 
 /**
@@ -1066,17 +1091,8 @@ function changeDate(direction) {
     const currentDate = getSelectedDate();
     currentDate.setDate(currentDate.getDate() + direction);
 
-    // Convert to YYYY-MM-DD using LOCAL time (not UTC)
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const newDateString = `${year}-${month}-${day}`;
-
-    const todayDate = new Date();
-    const todayYear = todayDate.getFullYear();
-    const todayMonth = String(todayDate.getMonth() + 1).padStart(2, '0');
-    const todayDay = String(todayDate.getDate()).padStart(2, '0');
-    const today = `${todayYear}-${todayMonth}-${todayDay}`;
+    const newDateString = formatDateString(currentDate);
+    const today = getTodayString();
 
     // Don't allow future dates
     if (newDateString > today) {
@@ -1084,23 +1100,16 @@ function changeDate(direction) {
     }
 
     // Don't allow more than 6 days in the past
-    const sixDaysAgo = new Date(todayDate);
+    const sixDaysAgo = new Date();
     sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
-    const sixDaysAgoYear = sixDaysAgo.getFullYear();
-    const sixDaysAgoMonth = String(sixDaysAgo.getMonth() + 1).padStart(2, '0');
-    const sixDaysAgoDay = String(sixDaysAgo.getDate()).padStart(2, '0');
-    const minDate = `${sixDaysAgoYear}-${sixDaysAgoMonth}-${sixDaysAgoDay}`;
+    const minDate = formatDateString(sixDaysAgo);
 
     if (newDateString < minDate) {
         return;
     }
 
     // Set to new date (or null if it's today)
-    if (newDateString === today) {
-        AppState.selectedDate = null;
-    } else {
-        AppState.selectedDate = newDateString;
-    }
+    AppState.selectedDate = (newDateString === today) ? null : newDateString;
 
     updateSelectedDateDisplay();
     setupMealsListener();

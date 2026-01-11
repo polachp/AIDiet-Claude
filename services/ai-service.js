@@ -9,6 +9,13 @@
  * Orchestruje všechny AI providery a zajišťuje fallback
  */
 class AIService {
+    // Map analysis type to capability name
+    static CAPABILITY_MAP = {
+        'text': 'text',
+        'image': 'images',
+        'audio': 'audio'
+    };
+
     constructor() {
         this.providers = new Map();
         this.config = null;
@@ -92,13 +99,7 @@ class AIService {
             throw new DOMException('Request aborted', 'AbortError');
         }
 
-        const capabilityMap = {
-            'text': 'text',
-            'image': 'images',
-            'audio': 'audio'
-        };
-
-        const requiredCapability = capabilityMap[analysisType];
+        const requiredCapability = AIService.CAPABILITY_MAP[analysisType];
         let provider = null;
 
         // 1. Zkus preferovaného providera
@@ -190,13 +191,7 @@ class AIService {
             throw new DOMException('Request aborted', 'AbortError');
         }
 
-        const capabilityMap = {
-            'text': 'text',
-            'image': 'images',
-            'audio': 'audio'
-        };
-
-        const requiredCapability = capabilityMap[analysisType];
+        const requiredCapability = AIService.CAPABILITY_MAP[analysisType];
 
         console.log(`🔄 AIService: Zkouším fallback pro ${analysisType}`);
 

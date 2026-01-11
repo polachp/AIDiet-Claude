@@ -1,5 +1,38 @@
 // Authentication Functions for AI Diet App
 
+// Firebase Auth error codes to Czech messages
+const AUTH_ERROR_MESSAGES = {
+    // Registration errors
+    'auth/email-already-in-use': 'Tento email je již registrován. Zkuste se přihlásit.',
+    'auth/weak-password': 'Heslo je príliš slabé. Použijte silnější heslo.',
+
+    // Login errors
+    'auth/user-not-found': 'Nesprávný email nebo heslo.',
+    'auth/wrong-password': 'Nesprávný email nebo heslo.',
+    'auth/user-disabled': 'Tento účet byl deaktivován.',
+    'auth/too-many-requests': 'Príliš mnoho neúspěšných pokusů. Zkuste to prosím později.',
+
+    // Common errors
+    'auth/invalid-email': 'Neplatná emailová adresa.',
+    'auth/network-request-failed': 'Chyba pripojení k internetu. Zkontrolujte své pripojení.',
+    'auth/operation-not-allowed': 'Tato operace není povolena. Kontaktujte administrátora.',
+
+    // Google-specific errors
+    'auth/popup-closed-by-user': 'Prihlášení bylo zrušeno.',
+    'auth/popup-blocked': 'Vyskakovací okno bylo blokováno prohlížečem. Povolte vyskakovací okna a zkuste to znovu.',
+    'auth/account-exists-with-different-credential': 'Účet s tímto emailem již existuje. Zkuste se prihlásit jiným zpusobem.'
+};
+
+/**
+ * Get Czech error message for Firebase auth error
+ * @param {Error} error - Firebase auth error
+ * @param {string} defaultMessage - Default message if error code not found
+ * @returns {string} Czech error message
+ */
+function getAuthErrorMessage(error, defaultMessage) {
+    return AUTH_ERROR_MESSAGES[error.code] || defaultMessage;
+}
+
 // ==================== UI TOGGLING ====================
 
 /**
@@ -131,28 +164,7 @@ async function registerWithEmail() {
         // Auth state observer will handle the transition to main app
     } catch (error) {
         console.error('❌ Registration error:', error);
-
-        // User-friendly error messages
-        let errorMessage = 'Registrace se nezdařila. Zkuste to prosím znovu.';
-
-        switch (error.code) {
-            case 'auth/email-already-in-use':
-                errorMessage = 'Tento email je již registrován. Zkuste se přihlásit.';
-                break;
-            case 'auth/invalid-email':
-                errorMessage = 'Neplatná emailová adresa.';
-                break;
-            case 'auth/operation-not-allowed':
-                errorMessage = 'Registrace pomocí emailu není povolena. Kontaktujte administrátora.';
-                break;
-            case 'auth/weak-password':
-                errorMessage = 'Heslo je příliš slabé. Použijte silnější heslo.';
-                break;
-            case 'auth/network-request-failed':
-                errorMessage = 'Chyba připojení k internetu. Zkontrolujte své připojení.';
-                break;
-        }
-
+        const errorMessage = getAuthErrorMessage(error, 'Registrace se nezdařila. Zkuste to prosím znovu.');
         showAuthMessage(errorMessage, 'error');
     }
 }
@@ -185,29 +197,7 @@ async function loginWithEmail() {
         // Auth state observer will handle the transition to main app
     } catch (error) {
         console.error('❌ Login error:', error);
-
-        // User-friendly error messages
-        let errorMessage = 'Přihlášení se nezdařilo. Zkuste to prosím znovu.';
-
-        switch (error.code) {
-            case 'auth/user-not-found':
-            case 'auth/wrong-password':
-                errorMessage = 'Nesprávný email nebo heslo.';
-                break;
-            case 'auth/invalid-email':
-                errorMessage = 'Neplatná emailová adresa.';
-                break;
-            case 'auth/user-disabled':
-                errorMessage = 'Tento účet byl deaktivován.';
-                break;
-            case 'auth/too-many-requests':
-                errorMessage = 'Příliš mnoho neúspěšných pokusů. Zkuste to prosím později.';
-                break;
-            case 'auth/network-request-failed':
-                errorMessage = 'Chyba připojení k internetu. Zkontrolujte své připojení.';
-                break;
-        }
-
+        const errorMessage = getAuthErrorMessage(error, 'Prihlášení se nezdařilo. Zkuste to prosím znovu.');
         showAuthMessage(errorMessage, 'error');
     }
 }
@@ -241,28 +231,7 @@ async function loginWithGoogle() {
         // Auth state observer will handle the transition to main app
     } catch (error) {
         console.error('❌ Google login error:', error);
-
-        // User-friendly error messages
-        let errorMessage = 'Přihlášení přes Google se nezdařilo.';
-
-        switch (error.code) {
-            case 'auth/popup-closed-by-user':
-                errorMessage = 'Přihlášení bylo zrušeno.';
-                break;
-            case 'auth/popup-blocked':
-                errorMessage = 'Vyskakovací okno bylo blokováno prohlížečem. Povolte vyskakovací okna a zkuste to znovu.';
-                break;
-            case 'auth/account-exists-with-different-credential':
-                errorMessage = 'Účet s tímto emailem již existuje. Zkuste se přihlásit jiným způsobem.';
-                break;
-            case 'auth/network-request-failed':
-                errorMessage = 'Chyba připojení k internetu. Zkontrolujte své připojení.';
-                break;
-            case 'auth/operation-not-allowed':
-                errorMessage = 'Přihlášení přes Google není povoleno. Kontaktujte administrátora.';
-                break;
-        }
-
+        const errorMessage = getAuthErrorMessage(error, 'Prihlášení pres Google se nezdařilo.');
         showAuthMessage(errorMessage, 'error');
     }
 }
@@ -287,44 +256,28 @@ async function logoutUser() {
 
 // ==================== KEYBOARD SHORTCUTS ====================
 
+/**
+ * Add Enter key handler to an element
+ * @param {string} elementId - Element ID
+ * @param {Function} handler - Function to call on Enter
+ */
+function addEnterKeyHandler(elementId, handler) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handler();
+        });
+    }
+}
+
 // Enable Enter key for login/register
 document.addEventListener('DOMContentLoaded', () => {
     // Login form
-    const loginEmail = document.getElementById('loginEmail');
-    const loginPassword = document.getElementById('loginPassword');
-
-    if (loginEmail) {
-        loginEmail.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loginWithEmail();
-        });
-    }
-
-    if (loginPassword) {
-        loginPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loginWithEmail();
-        });
-    }
+    addEnterKeyHandler('loginEmail', loginWithEmail);
+    addEnterKeyHandler('loginPassword', loginWithEmail);
 
     // Register form
-    const registerEmail = document.getElementById('registerEmail');
-    const registerPassword = document.getElementById('registerPassword');
-    const registerPasswordConfirm = document.getElementById('registerPasswordConfirm');
-
-    if (registerEmail) {
-        registerEmail.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') registerWithEmail();
-        });
-    }
-
-    if (registerPassword) {
-        registerPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') registerWithEmail();
-        });
-    }
-
-    if (registerPasswordConfirm) {
-        registerPasswordConfirm.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') registerWithEmail();
-        });
-    }
+    addEnterKeyHandler('registerEmail', registerWithEmail);
+    addEnterKeyHandler('registerPassword', registerWithEmail);
+    addEnterKeyHandler('registerPasswordConfirm', registerWithEmail);
 });

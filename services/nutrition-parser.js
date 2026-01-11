@@ -9,6 +9,17 @@
  * Podporuje JSON i textový formát
  */
 class NutritionParser {
+    // Required fields for nutrition data
+    static REQUIRED_FIELDS = ['name', 'calories', 'protein', 'carbs', 'fat'];
+
+    // Validation limits
+    static LIMITS = {
+        minCalories: 5,
+        maxCalories: 10000,
+        maxProtein: 500,
+        maxCarbs: 1000,
+        maxFat: 500
+    };
     /**
      * Parsuje AI odpověď a extrahuje výživové údaje
      * @param {string} aiResponse - Textová odpověď z AI
@@ -138,19 +149,15 @@ class NutritionParser {
      * @private
      */
     static _validateStructure(data) {
-        return (
-            data &&
-            typeof data === 'object' &&
-            'name' in data &&
-            'calories' in data &&
-            'protein' in data &&
-            'carbs' in data &&
-            'fat' in data &&
-            typeof data.calories === 'number' &&
-            typeof data.protein === 'number' &&
-            typeof data.carbs === 'number' &&
-            typeof data.fat === 'number'
-        );
+        if (!data || typeof data !== 'object') return false;
+
+        // Check all required fields exist
+        const hasAllFields = this.REQUIRED_FIELDS.every(field => field in data);
+        if (!hasAllFields) return false;
+
+        // Check numeric fields are numbers
+        const numericFields = ['calories', 'protein', 'carbs', 'fat'];
+        return numericFields.every(field => typeof data[field] === 'number');
     }
 
     /**
@@ -172,8 +179,10 @@ class NutritionParser {
      * @private
      */
     static _validateValues(data) {
+        const limits = this.LIMITS;
+
         // Minimální kalorie (ignoruje velmi nízké hodnoty)
-        if (data.calories < 5) {
+        if (data.calories < limits.minCalories) {
             console.warn('⚠️ NutritionParser: Calories too low, likely not food:', data);
             return false;
         }
@@ -185,7 +194,13 @@ class NutritionParser {
         }
 
         // Maximální rozumné hodnoty (ochrana před chybami AI)
-        if (data.calories > 10000 || data.protein > 500 || data.carbs > 1000 || data.fat > 500) {
+        const exceedsLimits =
+            data.calories > limits.maxCalories ||
+            data.protein > limits.maxProtein ||
+            data.carbs > limits.maxCarbs ||
+            data.fat > limits.maxFat;
+
+        if (exceedsLimits) {
             console.warn('⚠️ NutritionParser: Values too high, likely error:', data);
             return false;
         }

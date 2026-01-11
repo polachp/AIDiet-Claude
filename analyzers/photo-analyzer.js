@@ -113,87 +113,15 @@ class PhotoAnalyzer {
      * @returns {Error} Upravená chyba
      */
     _handleError(error) {
-        // Propaguj AbortError beze změny
-        if (error.name === 'AbortError') {
-            return error;
-        }
-
-        // Pokud už má chyba českou zprávu, vrať ji
-        if (error.message && error.message.match(/[čšřžýáíéúůňťď]/i)) {
-            return error;
-        }
-
-        // Různé typy chyb s českými zprávami
-        const errorMap = {
-            'network': 'Chyba připojení k internetu',
-            'timeout': 'Analýza trvala příliš dlouho',
-            'quota': 'Denní limit API volání byl vyčerpán',
-            'invalid': 'Nepodařilo se rozpoznat jídlo na obrázku',
-            'file': 'Chyba při čtení souboru'
-        };
-
-        // Zkus najít známý typ chyby
-        const errorType = Object.keys(errorMap).find(key =>
-            error.message.toLowerCase().includes(key)
+        return ErrorTranslator.handleError(
+            error,
+            'Nepodařilo se analyzovat obrázek. Zkuste to prosím znovu.'
         );
-
-        if (errorType) {
-            return new Error(errorMap[errorType]);
-        }
-
-        // Default chybová zpráva
-        return new Error('Nepodařilo se analyzovat obrázek. Zkuste to prosím znovu.');
     }
 
-    /**
-     * Validuje výživová data
-     * @param {Object} nutritionData - Data k validaci
-     * @returns {boolean} True pokud jsou data platná
-     */
-    validateNutritionData(nutritionData) {
-        if (!nutritionData || typeof nutritionData !== 'object') {
-            console.error('❌ PhotoAnalyzer: Neplatná data - není objekt');
-            return false;
-        }
-
-        const requiredFields = ['name', 'calories', 'protein', 'carbs', 'fat'];
-        const hasAllFields = requiredFields.every(field => field in nutritionData);
-
-        if (!hasAllFields) {
-            console.error('❌ PhotoAnalyzer: Chybí povinná pole:', requiredFields);
-            return false;
-        }
-
-        // Validace hodnot
-        if (nutritionData.calories < 0 || nutritionData.calories > 10000) {
-            console.error('❌ PhotoAnalyzer: Neplatné kalorie:', nutritionData.calories);
-            return false;
-        }
-
-        if (nutritionData.protein < 0 || nutritionData.protein > 500) {
-            console.error('❌ PhotoAnalyzer: Neplatné bílkoviny:', nutritionData.protein);
-            return false;
-        }
-
-        if (nutritionData.carbs < 0 || nutritionData.carbs > 1000) {
-            console.error('❌ PhotoAnalyzer: Neplatné sacharidy:', nutritionData.carbs);
-            return false;
-        }
-
-        if (nutritionData.fat < 0 || nutritionData.fat > 500) {
-            console.error('❌ PhotoAnalyzer: Neplatné tuky:', nutritionData.fat);
-            return false;
-        }
-
-        console.log('✅ PhotoAnalyzer: Validace dat úspěšná');
-        return true;
-    }
 }
-
-// Singleton instance
-const photoAnalyzer = new PhotoAnalyzer();
 
 // Export pro použití v ostatních modulech
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = photoAnalyzer;
+    module.exports = PhotoAnalyzer;
 }
