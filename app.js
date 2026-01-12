@@ -334,6 +334,9 @@ async function saveUserData() {
         AppState.userData = profileData;
         AppState.dailyGoals = calculatedGoals;
 
+        // Aktualizuj userData v AIService pro personalizaci promptů
+        aiService.setUserData(profileData);
+
         // Build alert message with TDEE and deficit info
         let message = 'Osobní údaje byly uloženy!\n\n';
         message += `BMR (bazální metabolismus): ${calculatedGoals.bmr} kcal\n`;
@@ -386,6 +389,9 @@ async function loadUserDataFromFirestore() {
 
             AppState.dailyGoals = profile.dailyGoals;
 
+            // Předej userData do AIService pro personalizaci promptů
+            aiService.setUserData(AppState.userData);
+
             // Load into form
             document.getElementById('userAge').value = AppState.userData.age;
             document.getElementById('userGender').value = AppState.userData.gender;
@@ -399,6 +405,7 @@ async function loadUserDataFromFirestore() {
             console.log('ℹ️ No user profile found (new user)');
             AppState.userData = null;
             AppState.dailyGoals = null;
+            aiService.setUserData(null);
         }
     } catch (error) {
         console.error('❌ Failed to load user data:', error);

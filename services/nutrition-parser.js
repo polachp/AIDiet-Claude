@@ -209,11 +209,69 @@ class NutritionParser {
     }
 
     /**
+     * Vypočítá multiplikátor porce podle uživatelského profilu
+     * @param {Object} userData - Uživatelský profil
+     * @returns {number} Multiplikátor (0.8 - 1.5)
+     */
+    static _getPortionMultiplier(userData) {
+        if (!userData) return 1.0;
+
+        let multiplier = 1.0;
+
+        // Podle pohlaví
+        if (userData.gender === 'male') multiplier *= 1.15;
+        else if (userData.gender === 'female') multiplier *= 0.9;
+
+        // Podle váhy
+        const weight = userData.weight || 75;
+        if (weight > 95) multiplier *= 1.15;
+        else if (weight > 85) multiplier *= 1.1;
+        else if (weight > 75) multiplier *= 1.05;
+        else if (weight < 55) multiplier *= 0.9;
+        else if (weight < 65) multiplier *= 0.95;
+
+        // Omez na rozumný rozsah
+        return Math.max(0.7, Math.min(1.6, multiplier));
+    }
+
+    /**
+     * Vytvoří text s porcemi přizpůsobenými uživateli
+     * @param {Object} userData - Uživatelský profil
+     * @returns {string} Text s velikostmi porcí
+     */
+    static _getPortionText(userData) {
+        const m = this._getPortionMultiplier(userData);
+
+        const meat = Math.round(180 * m);
+        const sideDish = Math.round(220 * m);
+        const vegetables = Math.round(150 * m);
+
+        let context = '';
+        if (userData) {
+            const gender = userData.gender === 'male' ? 'muž' : 'žena';
+            const goal = userData.goal === 'gain' ? 'nabírání' : userData.goal === 'lose' ? 'hubnutí' : 'udržení';
+            context = `\n(Uživatel: ${gender}, ${userData.weight || '?'}kg, cíl: ${goal})`;
+        }
+
+        return `DŮLEŽITÉ - Odhad velikosti porce:${context}
+- Pokud je uvedeno množství (gramy, ml, kusy), použij ho přesně
+- Pokud není uvedeno množství, předpokládej tyto porce:
+  * Maso/ryba: ~${meat}g
+  * Příloha (rýže, brambory, těstoviny): ~${sideDish}g vařené
+  * Zelenina: ~${vegetables}g
+  * Pečivo: 1 kus = ~60g
+  * Nápoje: standardní sklenice = 250ml`;
+    }
+
+    /**
      * Vytvoří prompt pro AI analýzu jídla
      * @param {string} foodDescription - Popis jídla od uživatele
+     * @param {Object} userData - Uživatelský profil (optional)
      * @returns {string} Formátovaný prompt
      */
-    static createFoodAnalysisPrompt(foodDescription) {
+    static createFoodAnalysisPrompt(foodDescription, userData = null) {
+        const portionText = this._getPortionText(userData);
+
         return `Analyzuj následující jídlo a vrať přesné nutriční hodnoty ve formátu JSON:
 {
   "name": "název jídla",
@@ -225,14 +283,7 @@ class NutritionParser {
 
 Jídlo: ${foodDescription}
 
-DŮLEŽITÉ - Odhad velikosti:
-- Pokud je uvedeno množství (gramy, ml, kusy), použij ho přesně
-- Pokud není uvedeno množství, předpokládej standardní porci:
-  * Maso/ryba: ~150g
-  * Příloha (rýže, brambory, těstoviny): ~200g vařené
-  * Zelenina: ~150g
-  * Pečivo: 1 kus = ~50-70g
-  * Nápoje: standardní sklenice = 250ml
+${portionText}
 
 Vrať POUZE validní JSON objekt, žádný další text.`;
     }
@@ -240,9 +291,22 @@ Vrať POUZE validní JSON objekt, žádný další text.`;
     /**
      * Vytvoří prompt pro AI analýzu obrázku jídla
      * @param {string} additionalContext - Dodatečný kontext od uživatele (optional)
+     * @param {Object} userData - Uživatelský profil (optional)
      * @returns {string} Formátovaný prompt
      */
-    static createImageAnalysisPrompt(additionalContext = '') {
+    static createImageAnalysisPrompt(additionalContext = '', userData = null) {
+        const m = this._getPortionMultiplier(userData);
+        const meat = Math.round(180 * m);
+        const sideDish = Math.round(220 * m);
+
+        let userContext = '';
+        if (userData) {
+            const gender = userData.gender === 'male' ? 'muž' : 'žena';
+            const goal = userData.goal === 'gain' ? 'nabírání' : userData.goal === 'lose' ? 'hubnutí' : 'udržení';
+            userContext = `\n- Uživatel: ${gender}, ${userData.weight || '?'}kg, cíl: ${goal}`;
+            userContext += `\n- Očekávaná porce masa: ~${meat}g, přílohy: ~${sideDish}g`;
+        }
+
         const basePrompt = `Analyzuj jídlo na tomto obrázku a vrať přesné nutriční hodnoty ve formátu JSON:
 {
   "name": "název jídla",
@@ -255,7 +319,7 @@ Vrať POUZE validní JSON objekt, žádný další text.`;
 DŮLEŽITÉ:
 - Odhadni velikost porce na základě vizuální analýzy
 - Pokud je na obrázku více jídel, sečti všechny dohromady
-- Snaž se co nejpřesněji odhadnout množství`;
+- Snaž se co nejpřesněji odhadnout množství${userContext}`;
 
         if (additionalContext) {
             return `${basePrompt}\n\nDodatečný kontext: ${additionalContext}\n\nVrať POUZE validní JSON objekt.`;
@@ -266,9 +330,12 @@ DŮLEŽITÉ:
 
     /**
      * Vytvoří prompt pro AI analýzu audio vstupu
+     * @param {Object} userData - Uživatelský profil (optional)
      * @returns {string} Formátovaný prompt
      */
-    static createAudioAnalysisPrompt() {
+    static createAudioAnalysisPrompt(userData = null) {
+        const portionText = this._getPortionText(userData);
+
         return `Přepiš toto audio a následně analyzuj zmíněné jídlo. Vrať výsledek ve formátu JSON:
 {
   "name": "název jídla",
@@ -278,9 +345,7 @@ DŮLEŽITÉ:
   "fat": gramy tuků (číslo)
 }
 
-DŮLEŽITÉ - Odhad velikosti:
-- Pokud uživatel uvede množství, použij ho přesně
-- Pokud ne, předpokládaj standardní porci
+${portionText}
 
 Vrať POUZE validní JSON objekt, žádný další text.`;
     }

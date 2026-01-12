@@ -20,6 +20,16 @@ class AIService {
         this.providers = new Map();
         this.config = null;
         this.defaultProvider = null;
+        this.userData = null;
+    }
+
+    /**
+     * Nastaví uživatelská data pro personalizaci promptů
+     * @param {Object} userData - Uživatelský profil (gender, weight, goal)
+     */
+    setUserData(userData) {
+        this.userData = userData;
+        console.log('✅ AIService: UserData nastavena pro personalizaci promptů');
     }
 
     /**
@@ -60,7 +70,7 @@ class AIService {
      * @returns {Promise<Object>} Výživové údaje
      */
     async analyzeText(foodDescription, preferredProvider = null, abortController = null) {
-        const prompt = NutritionParser.createFoodAnalysisPrompt(foodDescription);
+        const prompt = NutritionParser.createFoodAnalysisPrompt(foodDescription, this.userData);
         return await this._analyzeWithFallback('text', prompt, null, preferredProvider, abortController);
     }
 
@@ -73,7 +83,7 @@ class AIService {
      * @returns {Promise<Object>} Výživové údaje
      */
     async analyzeImage(imageBase64, additionalContext = '', preferredProvider = null, abortController = null) {
-        const prompt = NutritionParser.createImageAnalysisPrompt(additionalContext);
+        const prompt = NutritionParser.createImageAnalysisPrompt(additionalContext, this.userData);
         return await this._analyzeWithFallback('image', prompt, imageBase64, preferredProvider, abortController);
     }
 
@@ -85,7 +95,7 @@ class AIService {
      * @returns {Promise<Object>} Výživové údaje
      */
     async analyzeAudio(audioBase64, preferredProvider = null, abortController = null) {
-        const prompt = NutritionParser.createAudioAnalysisPrompt();
+        const prompt = NutritionParser.createAudioAnalysisPrompt(this.userData);
         return await this._analyzeWithFallback('audio', prompt, audioBase64, preferredProvider, abortController);
     }
 
