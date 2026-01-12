@@ -1,7 +1,8 @@
 # TODO
 
 ## Připravené úkoly
-
+ 1. Výběr dne z týdenního přehledu + aktualizace při klidnutí tam a zpět u dne
+ 2. Vyhledávání v oblíbených a globální?
 
 ## V řešení
 

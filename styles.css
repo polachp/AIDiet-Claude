@@ -483,6 +483,7 @@ button:disabled {
 .tabs {
     display: flex;
     gap: var(--space-sm);
+    margin-top: var(--space-lg);
     margin-bottom: var(--space-xl);
     padding: 0 var(--space-lg);
 }
@@ -560,34 +561,41 @@ button:disabled {
 
 .quick-add-buttons {
     display: flex;
-    gap: var(--space-sm);
+    gap: var(--space-md);
     position: absolute;
     right: var(--space-lg);
 }
 
 .quick-add-btn {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-light);
+    background: linear-gradient(135deg, rgba(75, 163, 227, 0.2), rgba(75, 163, 227, 0.1));
+    color: var(--primary);
+    border: 1.5px solid rgba(75, 163, 227, 0.4);
     border-radius: var(--radius-md);
     padding: var(--space-sm);
-    min-height: 40px;
-    min-width: 40px;
+    min-height: 48px;
+    min-width: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(75, 163, 227, 0.15);
 }
 
 .quick-add-btn:hover {
-    background: rgba(75, 163, 227, 0.15);
+    background: linear-gradient(135deg, rgba(75, 163, 227, 0.35), rgba(75, 163, 227, 0.2));
     border-color: var(--primary);
     color: var(--primary);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(75, 163, 227, 0.25);
+}
+
+.quick-add-btn:active {
+    transform: scale(0.95);
 }
 
 .quick-add-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
 }
 
 /* ==================== PHOTO UPLOAD ==================== */
@@ -1434,14 +1442,26 @@ button:disabled {
     background: transparent;
     color: var(--accent-red);
     padding: 8px;
-    font-size: 18px;
     min-height: 40px;
     min-width: 40px;
     border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.btn-delete-compact svg {
+    stroke: var(--accent-red);
 }
 
 .btn-delete-compact:hover {
     background: rgba(255, 82, 82, 0.15);
+    transform: scale(1.1);
+}
+
+.btn-delete-compact:active {
+    transform: scale(0.95);
 }
 
 /* ==================== MODAL ==================== */
@@ -1681,14 +1701,27 @@ button:disabled {
     top: 50%;
     transform: translateY(-50%);
     background: transparent;
-    font-size: 20px;
+    color: var(--accent-red);
     padding: 8px;
     min-height: auto;
     border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.btn-delete-icon svg {
+    stroke: var(--accent-red);
 }
 
 .btn-delete-icon:hover {
     background: rgba(255, 82, 82, 0.15);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.btn-delete-icon:active {
+    transform: translateY(-50%) scale(0.95);
 }
 
 .modal-footer-actions {
@@ -2236,13 +2269,25 @@ button:disabled {
     }
 
     .input-section-header {
-        flex-direction: column;
-        gap: var(--space-sm);
+        padding: var(--space-md) var(--space-md) var(--space-sm);
+    }
+
+    .input-section-header h2 {
+        font-size: 16px;
     }
 
     .quick-add-buttons {
-        position: static;
-        margin-top: var(--space-sm);
+        right: var(--space-md);
+    }
+
+    .quick-add-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .quick-add-btn svg {
+        width: 22px;
+        height: 22px;
     }
 
     .food-list {
