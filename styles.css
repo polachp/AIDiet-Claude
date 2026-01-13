@@ -695,6 +695,66 @@ button:disabled {
     flex-shrink: 0;
 }
 
+/* Skeleton Loading for Meals */
+@keyframes skeleton-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.skeleton-item:last-child {
+    border-bottom: none;
+}
+
+.skeleton-left {
+    flex: 1;
+}
+
+.skeleton-line {
+    height: 14px;
+    background: linear-gradient(90deg,
+        rgba(255,255,255,0.05) 25%,
+        rgba(255,255,255,0.1) 50%,
+        rgba(255,255,255,0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+.skeleton-line.title {
+    width: 60%;
+    height: 16px;
+    margin-bottom: var(--space-sm);
+}
+
+.skeleton-line.meta {
+    width: 40%;
+    height: 12px;
+}
+
+.skeleton-right {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.skeleton-macro {
+    width: 50px;
+    height: 14px;
+    background: linear-gradient(90deg,
+        rgba(255,255,255,0.05) 25%,
+        rgba(255,255,255,0.1) 50%,
+        rgba(255,255,255,0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
 /* Loading Modal */
 .loading-modal {
     position: fixed;

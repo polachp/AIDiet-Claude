@@ -430,6 +430,9 @@ function setupMealsListener() {
         AppState.unsubscribeMealsListener();
     }
 
+    // Show skeleton immediately while loading
+    showMealsSkeleton();
+
     const dateString = getSelectedDateString();
     AppState.unsubscribeMealsListener = listenToMealsForDate(
         AppState.currentUser.uid,
@@ -438,7 +441,6 @@ function setupMealsListener() {
             console.log('📥 Meals updated from Firestore for', dateString, ':', updatedMeals.length);
             AppState.meals = updatedMeals;
             updateSummary();
-            updateWeeklyTrend();
             displayMeals();
         }
     );
@@ -478,6 +480,9 @@ async function addMeal(nutritionData) {
             ...nutritionData
         });
 
+        // Update weekly trend (deferred to not block UI)
+        updateWeeklyTrend();
+
         return mealId;
     } catch (error) {
         console.error('Error adding meal:', error);
@@ -503,10 +508,37 @@ async function deleteMeal(id) {
         const dateString = getSelectedDateString();
         await deleteMealFromFirestore(AppState.currentUser.uid, id, dateString);
         console.log('✅ Meal deleted successfully from', dateString);
+
+        // Update weekly trend after deletion
+        updateWeeklyTrend();
     } catch (error) {
         console.error('Error deleting meal:', error);
         alert('Chyba při mazání jídla. Zkuste to prosím znovu.');
     }
+}
+
+/**
+ * Show skeleton loading state for meals list
+ */
+function showMealsSkeleton() {
+    const mealsList = document.getElementById('mealsList');
+    if (!mealsList) return;
+
+    const skeletonHTML = Array(3).fill(`
+        <div class="skeleton-item">
+            <div class="skeleton-left">
+                <div class="skeleton-line title"></div>
+                <div class="skeleton-line meta"></div>
+            </div>
+            <div class="skeleton-right">
+                <div class="skeleton-macro"></div>
+                <div class="skeleton-macro"></div>
+                <div class="skeleton-macro"></div>
+            </div>
+        </div>
+    `).join('');
+
+    mealsList.innerHTML = skeletonHTML;
 }
 
 /**
@@ -994,8 +1026,8 @@ async function updateWeeklyTrend() {
         // Show loading state
         chartContainer.innerHTML = '<div class="weekly-trend-loading">Načítám data...</div>';
 
-        // Fetch weekly data
-        const weeklyData = await getWeeklyMealsData(AppState.currentUser.uid);
+        // Fetch weekly summaries (optimized - uses dailySummaries with lazy migration)
+        const weeklyData = await getWeeklySummaries(AppState.currentUser.uid);
 
         // Find max calories for scaling
         const maxCalories = Math.max(
@@ -1443,6 +1475,54 @@ function showInlineLoading(elementId, show) {
 // =====================================
 
 /**
+ * Open modal for manual meal entry (without AI analysis)
+ */
+function openManualMealModal() {
+    const modal = document.getElementById('mealEditModal');
+    const title = document.getElementById('mealEditTitle');
+    const deleteBtn = document.getElementById('mealEditDeleteBtn');
+    const saveBtn = document.getElementById('mealEditSaveBtn');
+    const cancelBtn = document.getElementById('mealEditCancelBtn');
+
+    // Set mode to 'manual' - will create new meal on save
+    document.getElementById('editMealMode').value = 'manual';
+    document.getElementById('editMealId').value = '';
+
+    // Clear form with default values
+    document.getElementById('editMealName').value = '';
+    document.getElementById('editMealProtein').value = '';
+    document.getElementById('editMealCarbs').value = '';
+    document.getElementById('editMealFat').value = '';
+
+    // Setup calories slider with default value
+    setupCaloriesSlider(300);
+
+    // Setup macro inputs
+    setupMacroInputs();
+
+    // Configure UI for manual mode
+    title.textContent = 'Přidat jídlo ručně';
+    saveBtn.textContent = 'Přidat';
+    cancelBtn.textContent = 'Zrušit';
+    deleteBtn.style.display = 'none';
+
+    // Reset favorite status
+    currentMealFavoriteId = null;
+    const favBtn = document.getElementById('mealFavoriteBtn');
+    if (favBtn) {
+        favBtn.classList.remove('active');
+    }
+
+    // Show modal
+    modal.classList.add('active');
+
+    // Focus on name input
+    setTimeout(() => {
+        document.getElementById('editMealName').focus();
+    }, 100);
+}
+
+/**
  * Open meal edit modal
  * @param {string} mode - 'edit' for existing meal, 'new' for newly added meal
  * @param {Object} meal - Meal data (id, name, calories, protein, carbs, fat)
@@ -1606,11 +1686,15 @@ async function saveMealEdit() {
     try {
         const dateString = getSelectedDateString();
 
-        if (mode === 'new') {
-            // For new meal, it's already saved - just update it
+        if (mode === 'manual') {
+            // Manual entry - create new meal in Firestore
+            await addMealToFirestore(AppState.currentUser.uid, mealData, dateString);
+            console.log('✅ Manual meal added successfully');
+        } else if (mode === 'new') {
+            // For new meal from AI analysis, it's already saved - just update it
             await updateMealInFirestore(AppState.currentUser.uid, mealId, mealData, dateString);
         } else {
-            // Update existing meal
+            // Update existing meal (edit mode)
             await updateMealInFirestore(AppState.currentUser.uid, mealId, mealData, dateString);
         }
 
@@ -1619,9 +1703,12 @@ async function saveMealEdit() {
 
         console.log('✅ Meal saved successfully');
 
-        // Close modal without deleting
+        // Close modal
         const modal = document.getElementById('mealEditModal');
         modal.classList.remove('active');
+
+        // Update weekly trend after edit (calories may have changed)
+        updateWeeklyTrend();
 
     } catch (error) {
         console.error('Error saving meal:', error);
@@ -1648,6 +1735,9 @@ async function deleteMealFromEdit() {
         const modal = document.getElementById('mealEditModal');
         modal.classList.remove('active');
 
+        // Update weekly trend after deletion
+        updateWeeklyTrend();
+
     } catch (error) {
         console.error('Error deleting meal:', error);
         alert('Chyba při mazání jídla');
@@ -1664,6 +1754,9 @@ async function deleteMealSilent(mealId) {
         const dateString = getSelectedDateString();
         await deleteMealFromFirestore(AppState.currentUser.uid, mealId, dateString);
         console.log('✅ Meal deleted silently:', mealId);
+
+        // Update weekly trend after deletion
+        updateWeeklyTrend();
     } catch (error) {
         console.error('Error deleting meal silently:', error);
     }

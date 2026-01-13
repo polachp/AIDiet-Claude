@@ -344,6 +344,109 @@ async function getWeeklyMealsData(userId) {
     }
 }
 
+// ==================== DAILY SUMMARIES ====================
+
+/**
+ * Recalculate and save daily summary for a specific date
+ * Called automatically after add/update/delete meal operations
+ * @param {string} userId - User ID
+ * @param {string} dateString - Date string (YYYY-MM-DD)
+ * @returns {Promise<Object>} The calculated summary
+ */
+async function recalculateDailySummary(userId, dateString) {
+    try {
+        // Get all meals for the date
+        const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
+        const snapshot = await mealsRef.get();
+
+        // Calculate totals
+        let totalCalories = 0;
+        let totalProtein = 0;
+        let totalCarbs = 0;
+        let totalFat = 0;
+        let mealCount = 0;
+
+        snapshot.forEach(doc => {
+            const meal = doc.data();
+            totalCalories += meal.calories || 0;
+            totalProtein += meal.protein || 0;
+            totalCarbs += meal.carbs || 0;
+            totalFat += meal.fat || 0;
+            mealCount++;
+        });
+
+        const summary = {
+            totalCalories,
+            totalProtein,
+            totalCarbs,
+            totalFat,
+            mealCount,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Save to dailySummaries collection
+        const summaryRef = db.collection('users').doc(userId).collection('dailySummaries').doc(dateString);
+        await summaryRef.set(summary);
+
+        console.log('📊 Daily summary updated for', dateString, ':', totalCalories, 'kcal');
+        return summary;
+    } catch (error) {
+        console.error('Error recalculating daily summary:', error);
+        // Don't throw - this is a secondary operation, shouldn't break main flow
+        return null;
+    }
+}
+
+/**
+ * Get daily summary (with lazy migration fallback)
+ * @param {string} userId - User ID
+ * @param {string} dateString - Date string (YYYY-MM-DD)
+ * @returns {Promise<Object>} Summary object
+ */
+async function getDailySummary(userId, dateString) {
+    try {
+        const summaryRef = db.collection('users').doc(userId).collection('dailySummaries').doc(dateString);
+        const doc = await summaryRef.get();
+
+        if (doc.exists) {
+            // Summary exists - return it
+            return { date: dateString, ...doc.data() };
+        } else {
+            // Lazy migration: calculate and save summary
+            console.log('📊 Lazy migration: calculating summary for', dateString);
+            const summary = await recalculateDailySummary(userId, dateString);
+            return { date: dateString, ...summary };
+        }
+    } catch (error) {
+        console.error('Error getting daily summary:', error);
+        return { date: dateString, totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, mealCount: 0 };
+    }
+}
+
+/**
+ * Get weekly summaries (optimized - 7 parallel requests to summaries, not meals)
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of daily summaries
+ */
+async function getWeeklySummaries(userId) {
+    try {
+        const promises = [];
+
+        // Get summaries for last 7 days in parallel
+        for (let i = 6; i >= 0; i--) {
+            const dateString = getDateString(i);
+            promises.push(getDailySummary(userId, dateString));
+        }
+
+        return await Promise.all(promises);
+    } catch (error) {
+        console.error('Error fetching weekly summaries:', error);
+        throw error;
+    }
+}
+
+// ==================== MEAL CRUD OPERATIONS ====================
+
 /**
  * Add a new meal
  * @param {string} userId - User ID
@@ -370,6 +473,9 @@ async function addMealToFirestore(userId, mealData, dateString = null) {
         // Increment API call counter for rate limiting
         await incrementApiCallCounter(userId);
 
+        // Update daily summary (fire and forget - don't await)
+        recalculateDailySummary(userId, dateString);
+
         return docRef.id;
     } catch (error) {
         console.error('Error adding meal:', error);
@@ -391,6 +497,9 @@ async function deleteMealFromFirestore(userId, mealId, dateString = null) {
         }
         await db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items').doc(mealId).delete();
         console.log('✅ Meal deleted:', mealId, 'from date:', dateString);
+
+        // Update daily summary (fire and forget - don't await)
+        recalculateDailySummary(userId, dateString);
     } catch (error) {
         console.error('Error deleting meal:', error);
         throw error;
@@ -421,6 +530,9 @@ async function updateMealInFirestore(userId, mealId, mealData, dateString = null
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         console.log('✅ Meal updated:', mealId, 'for date:', dateString);
+
+        // Update daily summary (fire and forget - don't await)
+        recalculateDailySummary(userId, dateString);
     } catch (error) {
         console.error('Error updating meal:', error);
         throw error;
