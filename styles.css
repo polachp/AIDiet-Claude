@@ -1299,27 +1299,22 @@ button:disabled {
     margin-top: 2px;
 }
 
-/* Today highlight */
-.trend-column.today {
-    background: rgba(75, 163, 227, 0.1);
+/* Selected day - prominent highlight matching app design */
+.trend-column.selected {
+    background: rgba(75, 163, 227, 0.15);
 }
 
-.trend-column.today .trend-day-name {
+.trend-column.selected .trend-day-name {
     color: var(--primary);
+    font-weight: 600;
 }
 
-.trend-column.today .trend-percent {
-    color: var(--primary);
-}
-
-/* Selected state */
-.trend-column.selected .trend-bar {
-    box-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
-    transform: scaleY(1.02);
-}
-
-.trend-column.selected .trend-day-name,
 .trend-column.selected .trend-percent {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.trend-column.selected .trend-day-date {
     color: var(--text-primary);
 }
 

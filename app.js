@@ -996,7 +996,6 @@ async function updateWeeklyTrend() {
 
         // Fetch weekly data
         const weeklyData = await getWeeklyMealsData(AppState.currentUser.uid);
-        const todayDateString = new Date().toISOString().split('T')[0];
 
         // Find max calories for scaling
         const maxCalories = Math.max(
@@ -1033,18 +1032,14 @@ async function updateWeeklyTrend() {
                 barClass += ' no-data';
             }
 
-            const isToday = dayData.date === todayDateString;
-            const isSelected = dayData.date === AppState.selectedDate;
-
-            // If no date is selected (viewing today), mark today as selected
-            const isTodayActive = isToday && !AppState.selectedDate;
+            const selectedDateString = getSelectedDateString();
+            const isSelected = dayData.date === selectedDateString;
 
             let columnClasses = 'trend-column';
-            if (isToday) columnClasses += ' today';
-            if (isSelected || isTodayActive) columnClasses += ' selected';
+            if (isSelected) columnClasses += ' selected';
 
             chartHTML += `
-                <div class="${columnClasses}">
+                <div class="${columnClasses}" data-date="${dayData.date}">
                     <div class="trend-bar-container">
                         <div class="${barClass}" style="height: ${barHeight}%"></div>
                     </div>
@@ -1059,10 +1054,40 @@ async function updateWeeklyTrend() {
         chartHTML += `<div class="trend-goal-line" style="bottom: ${goalLinePosition}%"></div>`;
 
         chartContainer.innerHTML = chartHTML;
+
+        // Add click handlers to each day column
+        chartContainer.querySelectorAll('.trend-column').forEach(column => {
+            column.addEventListener('click', () => {
+                const clickedDate = column.dataset.date;
+                if (clickedDate) {
+                    navigateToDate(clickedDate);
+                }
+            });
+        });
     } catch (error) {
         console.error('Error updating weekly trend:', error);
         chartContainer.innerHTML = '<div class="weekly-trend-loading">Chyba při načítání dat</div>';
     }
+}
+
+/**
+ * Update only the selected state in weekly trend (without refetching data)
+ */
+function updateWeeklyTrendSelection() {
+    const chartContainer = document.getElementById('weeklyTrendChart');
+    if (!chartContainer) return;
+
+    const selectedDateString = getSelectedDateString();
+
+    chartContainer.querySelectorAll('.trend-column').forEach(column => {
+        const columnDate = column.dataset.date;
+        const isSelected = columnDate === selectedDateString;
+
+        column.classList.remove('selected');
+        if (isSelected) {
+            column.classList.add('selected');
+        }
+    });
 }
 
 /**
@@ -1139,6 +1164,7 @@ function changeDate(direction) {
     AppState.selectedDate = (newDateString === today) ? null : newDateString;
 
     updateSelectedDateDisplay();
+    updateWeeklyTrendSelection(); // Update weekly chart to highlight selected day
     setupMealsListener();
     updateNavigationButtons();
 }
@@ -1155,6 +1181,27 @@ function goToPreviousDay() {
  */
 function goToNextDay() {
     changeDate(1);
+}
+
+/**
+ * Navigate directly to a specific date
+ * @param {string} dateString - Date in YYYY-MM-DD format
+ */
+function navigateToDate(dateString) {
+    const today = getTodayString();
+
+    // Don't allow future dates
+    if (dateString > today) {
+        return;
+    }
+
+    // Set to new date (or null if it's today)
+    AppState.selectedDate = (dateString === today) ? null : dateString;
+
+    updateSelectedDateDisplay();
+    updateWeeklyTrendSelection(); // Update weekly chart to highlight selected day
+    setupMealsListener();
+    updateNavigationButtons();
 }
 
 /**
