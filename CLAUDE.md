@@ -8,7 +8,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - ✅ Be brief and to the point
 - ✅ Highlight critical info with **bold** or emojis
-- ✅ Skip verbose explanations unless asked
 - ✅ Use bullet points over paragraphs
 - ❌ Don't repeat information
 - ❌ Don't over-explain simple concepts
@@ -33,7 +32,7 @@ AI Diet is a multi-user web application for tracking calorie intake using **mult
 
 ## Architecture
 
-### Modular Structure (NEW)
+### Modular Structure
 
 ```
 ├── ai-providers/          # Strategy Pattern implementation
@@ -51,13 +50,13 @@ AI Diet is a multi-user web application for tracking calorie intake using **mult
 │   └── voice-analyzer.js  # Audio input handler
 ├── utils/
 │   └── media-converter.js # Base64 conversion utilities
-├── app.js                 # Main orchestration (1,074 lines, reduced from 1,404)
+├── app.js                 # Main orchestration (~2,000 lines)
 ├── auth.js                # Authentication
 ├── firebase-config.js     # Firebase initialization
 └── index.html             # UI structure
 ```
 
-### Data Flow (UPDATED)
+### Data Flow
 
 ```
 Firebase Auth → User logged in
@@ -66,7 +65,8 @@ Firebase Auth → User logged in
   → Analyzer (TextAnalyzer/PhotoAnalyzer/VoiceAnalyzer)
   → AI Provider (Gemini/DeepSeek with automatic fallback)
   → NutritionParser.parse()
-  → addMealToFirestore()
+  → openMealEditModal('new', nutritionData)  ← User can edit before saving
+  → saveMealEdit() → addMealToFirestore()
   → Firestore real-time listener
   → updateSummary() + displayMeals()
 ```
@@ -75,14 +75,15 @@ Firebase Auth → User logged in
 
 **AppState (app.js):**
 - `currentUser` - Firebase user object (uid, email)
-- `meals[]` - Today's meals (synced via real-time listener)
+- `meals[]` - Selected day's meals (synced via real-time listener)
+- `selectedDate` - Current selected date (null = today)
 - `aiConfig` - Multi-provider configuration from Firestore
 - `userData` - User profile (age, gender, weight, height, activity)
 - `dailyGoals` - Calculated TDEE and macros
 - `unsubscribeMealsListener` - Firestore listener cleanup function
 
 **Firestore Structure:**
-- `/config/aiProviders` - **NEW:** Multi-provider configuration with fallback
+- `/config/aiProviders` - Multi-provider configuration with fallback
   ```javascript
   {
     defaultProvider: "gemini",
@@ -96,6 +97,8 @@ Firebase Auth → User logged in
 - `/config/gemini` - **DEPRECATED:** Legacy single API key (backward compatible)
 - `/users/{userId}/data/profile` - User profile + calculated goals
 - `/users/{userId}/meals/{date}/items/{mealId}` - Meal entries
+- `/users/{userId}/foodHistory/{mealName}` - Recently used foods
+- `/users/{userId}/favorites/{id}` - Favorite meals for quick-add
 - `/users/{userId}/rateLimit/{date}` - API call counter (max 100/day for Gemini)
 
 ### Firebase Integration
@@ -103,12 +106,12 @@ Firebase Auth → User logged in
 **Auth (auth.js):** Google OAuth + Email/Password. Auth observer in `firebase-config.js` → `showMainApp()` or `showAuthUI()`.
 
 **Service Layer (firestore-service.js):**
-- `getAIProvidersConfig()` - **NEW:** Loads multi-provider config with legacy fallback
-- `saveAIProvidersConfig(config)` - **NEW:** Saves provider configuration
-- `updateDefaultProvider(name)` - **NEW:** Changes active provider
-- `getApiKeyFromFirestore()` - **DEPRECATED:** Legacy single-key loader
+- `getAIProvidersConfig()` - Loads multi-provider config with legacy fallback
+- `saveAIProvidersConfig(config)` - Saves provider configuration
+- `updateDefaultProvider(name)` - Changes active provider
 - `saveUserProfile()` - Calculates goals
 - `listenToTodayMeals()` - Real-time meal sync
+- `getFoodHistory()` / `getFavorites()` - Quick-add data
 - Rate limiting functions
 
 **Init Flow:**
@@ -120,7 +123,7 @@ Auth change → initializeApp(user)
 OR clearAppData() on logout
 ```
 
-### AI Provider Integration (NEW - Strategy Pattern)
+### AI Provider Integration (Strategy Pattern)
 
 **BaseAIProvider (base-provider.js):**
 - Abstract interface defining `analyzeText()`, `analyzeImage()`, `analyzeAudio()`
@@ -137,7 +140,6 @@ OR clearAppData() on logout
 - ⚠️ **TEXT ONLY** - no image/audio support
 - Uses OpenAI-compatible API format
 - Endpoint: `https://api.deepseek.com/chat/completions`
-- Forces JSON output with `response_format: { type: 'json_object' }`
 - Cheaper alternative for text analysis
 
 **AIProviderFactory (provider-factory.js):**
@@ -148,14 +150,9 @@ OR clearAppData() on logout
 
 **AIService (ai-service.js):**
 - Main orchestrator (singleton: `aiService`)
-- Methods:
-  - `initialize(aiConfig)` - Setup with config
-  - `analyzeText(description)` - Text analysis
-  - `analyzeImage(base64, context)` - Image analysis
-  - `analyzeAudio(base64)` - Audio analysis
+- Methods: `initialize()`, `analyzeText()`, `analyzeImage()`, `analyzeAudio()`
 - Automatic provider selection based on capability
 - Fallback to alternative provider on failure
-- Health checks on initialization
 
 **NutritionParser (nutrition-parser.js):**
 - `parse(aiResponse)` - Extracts nutrition data from AI text
@@ -163,7 +160,7 @@ OR clearAppData() on logout
 - Validates: structure, value ranges, minimums
 - Creates prompts: `createFoodAnalysisPrompt()`, `createImageAnalysisPrompt()`, `createAudioAnalysisPrompt()`
 
-### Analyzers (NEW)
+### Analyzers
 
 **TextAnalyzer (text-analyzer.js):**
 - `analyze(textInput)` - Validates and calls `aiService.analyzeText()`
@@ -172,17 +169,13 @@ OR clearAppData() on logout
 **PhotoAnalyzer (photo-analyzer.js):**
 - `analyze(imageFile, context)` - Validates, converts to base64, analyzes
 - Auto-compression for files >500KB (max 1024x1024, quality 0.8)
-- Uses `MediaConverter.compressImage()` or `fileToBase64()`
 
 **VoiceAnalyzer (voice-analyzer.js):**
 - `analyze(audioBlob)` - Converts blob to base64, calls AI
-- Uses `MediaConverter.blobToBase64()`
 - Static helpers: `getSupportedAudioFormat()`, `isSupported()`
 
 **MediaConverter (media-converter.js):**
-- `fileToBase64(file)` - File → base64 string
-- `blobToBase64(blob)` - Blob → base64 string
-- `compressImage(file, maxW, maxH, quality)` - Smart image compression
+- `fileToBase64(file)`, `blobToBase64(blob)`, `compressImage()`
 - Validators: `isImageFile()`, `isAudioFile()`, `isVideoFile()`
 
 ### Nutrition Calculations
@@ -193,19 +186,25 @@ OR clearAppData() on logout
 
 ### UI Patterns
 
-**Auth Toggle:** `authScreen` and `mainApp` switched via `display: none/block`. Auth state observer in `firebase-config.js` handles transitions.
+**Auth Toggle:** `authScreen` and `mainApp` switched via `display: none/block`. Auth state observer handles transitions.
+
+**Meal Edit Modal:** After AI analysis, `openMealEditModal('new', nutritionData)` displays results for user review/edit before saving. Mode `'edit'` for existing meals.
 
 **Settings Modal:**
 - User data section (age, gender, weight, height, activity, goal)
-- **NEW:** AI Provider selection with capability indicators
-  - Radio buttons for provider selection
-  - Visual indicators: 📝 Text, 📷 Images, 🎤 Audio
-  - Warnings for limited providers (DeepSeek)
-  - Live capability display
+- AI Provider selection with capability indicators (📝 Text, 📷 Images, 🎤 Audio)
 
-**Circular Progress:** SVG `stroke-dashoffset` animation for macro nutrients (radius 52, circumference = 2πr).
+**Weekly Trend Chart:** Interactive SVG chart. Click on day to navigate to that date.
 
-**Dynamic Updates:** `mealsList` regenerated on Firestore listener callback. Preserve element IDs: `authScreen`, `mainApp`, `loginForm`, `registerForm`, `userDataSection`, `mealsList`, `aiProvidersList`, `providerCapabilities`.
+**Date Navigation:** `selectedDate` state controls which day's meals are shown. Navigate with arrows or click on weekly trend.
+
+**Food History & Favorites:** Quick-add modal with tabs for recent foods and favorites. Star icon in meal edit modal toggles favorite status.
+
+**Circular Progress:** SVG `stroke-dashoffset` animation for macro nutrients.
+
+**Confirm Dialog:** Use `showConfirmDialog(title, message, icon)` instead of native `confirm()`. Returns `Promise<boolean>`. Maintains consistent UI style.
+
+**Dynamic Updates:** `mealsList` regenerated on Firestore listener callback.
 
 ### Design System
 
@@ -241,16 +240,16 @@ No build process required. Deploy these files:
 - `index.html`, `app.js`, `styles.css`
 - `auth.js`, `firebase-config.js`, `firestore-service.js`
 
-**AI Providers (NEW):**
+**AI Providers:**
 - `ai-providers/*.js` (base, gemini, deepseek, factory)
 
-**Services (NEW):**
+**Services:**
 - `services/*.js` (ai-service, nutrition-parser)
 
-**Analyzers (NEW):**
+**Analyzers:**
 - `analyzers/*.js` (text, photo, voice)
 
-**Utils (NEW):**
+**Utils:**
 - `utils/*.js` (media-converter)
 
 **Optional:**
@@ -286,27 +285,7 @@ Works on: GitHub Pages, Netlify, Vercel, Railway, any static host.
 - **Firebase required** - Authentication and Firestore database mandatory
 - **Multi-user** - Each user has isolated data, shared AI provider configs
 - **Rate limited** - Max 100 Gemini API calls per user per day
-- **Daily data** - Meals stored per date, older dates remain in Firestore
+- **Daily data** - Meals stored per date, navigate between days
 - **Multi-AI support** - Gemini (full multimodal) or DeepSeek (text only)
 - **Automatic fallback** - If primary provider fails, tries alternatives
 - **Czech language** - UI text and alerts in Czech
-
-## Key Changes from Original
-
-**Refactoring (v2.0):**
-- ✅ Reduced `app.js` from 1,404 → 1,074 lines (23.5% smaller)
-- ✅ Extracted 330+ lines into modular architecture
-- ✅ Strategy Pattern for AI providers (easy to add GPT-4, Claude, etc.)
-- ✅ Automatic provider fallback on failure
-- ✅ UI for switching AI providers
-- ✅ DeepSeek support for cost optimization
-- ✅ Better error handling and logging
-- ✅ Backward compatible with legacy config
-
-**File Structure:**
-- **Before:** All in `app.js` (monolithic)
-- **After:** Modular folders (providers, services, analyzers, utils)
-
-**Configuration:**
-- **Before:** `/config/gemini` with single API key
-- **After:** `/config/aiProviders` with multi-provider support + fallback

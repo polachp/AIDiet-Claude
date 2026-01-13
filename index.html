@@ -234,6 +234,20 @@
             </div>
         </div>
 
+        <!-- Confirm Dialog -->
+        <div id="confirmDialog" class="modal confirm-dialog">
+            <div class="modal-overlay" onclick="closeConfirmDialog(false)"></div>
+            <div class="confirm-dialog-content">
+                <div class="confirm-dialog-icon">🗑️</div>
+                <h3 id="confirmDialogTitle">Smazat jídlo?</h3>
+                <p id="confirmDialogMessage">Tato akce je nevratná.</p>
+                <div class="confirm-dialog-actions">
+                    <button class="btn-secondary" onclick="closeConfirmDialog(false)">Zrušit</button>
+                    <button class="btn-danger" onclick="closeConfirmDialog(true)">Smazat</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Meal Edit Modal -->
         <div id="mealEditModal" class="modal">
             <div class="modal-overlay" onclick="closeMealEditModal()"></div>

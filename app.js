@@ -495,7 +495,8 @@ async function addMeal(nutritionData) {
  * Delete meal from Firestore
  */
 async function deleteMeal(id) {
-    if (!confirm('Opravdu chcete smazat toto jídlo?')) {
+    const confirmed = await showConfirmDialog('Smazat jídlo?', 'Tato akce je nevratná.');
+    if (!confirmed) {
         return;
     }
 
@@ -559,10 +560,10 @@ function displayMeals() {
         const mealName = meal.name.charAt(0).toUpperCase() + meal.name.slice(1);
 
         // Escape meal data for onclick
-        const mealJson = JSON.stringify(meal).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const mealJson = JSON.stringify(meal).replace(/'/g, "\\'");
 
         return `
-        <div class="meal-item-compact" onclick="openMealEditModal('edit', ${mealJson})">
+        <div class="meal-item-compact" onclick='openMealEditModal("edit", ${mealJson})'>
             <div class="meal-left">
                 <div class="meal-name-compact">${mealName}</div>
                 <div class="meal-meta">
@@ -609,7 +610,8 @@ async function analyzeText() {
         const nutritionData = await textAnalyzer.analyze(text, AppState.abortController);
 
         if (nutritionData) {
-            await addMeal(nutritionData);
+            // Show modal for review/edit before saving
+            openMealEditModal('new', nutritionData);
             textInput.value = '';
         } else {
             alert('Nepodařilo se analyzovat jídlo. Zkuste to prosím znovu.');
@@ -654,7 +656,8 @@ async function analyzePhoto() {
         const nutritionData = await photoAnalyzer.analyze(file, '', AppState.abortController);
 
         if (nutritionData) {
-            await addMeal(nutritionData);
+            // Show modal for review/edit before saving
+            openMealEditModal('new', nutritionData);
             photoInput.value = '';
         } else {
             alert('Nepodařilo se analyzovat fotografii. Zkuste to prosím znovu.');
@@ -789,7 +792,8 @@ async function analyzeVoice() {
         const nutritionData = await voiceAnalyzer.analyze(AppState.audioBlob, AppState.abortController);
 
         if (nutritionData) {
-            await addMeal(nutritionData);
+            // Show modal for review/edit before saving
+            openMealEditModal('new', nutritionData);
             // Reset audio state
             AppState.audioBlob = null;
             document.getElementById('voiceBtn').textContent = '🎤 Začít nahrávat';
@@ -813,6 +817,41 @@ async function analyzeVoice() {
 // =====================================
 // UI FUNCTIONS
 // =====================================
+
+// Confirm dialog state
+let confirmDialogResolve = null;
+
+/**
+ * Show custom confirm dialog
+ * @param {string} title - Dialog title
+ * @param {string} message - Dialog message
+ * @param {string} icon - Emoji icon (default: 🗑️)
+ * @returns {Promise<boolean>} - true if confirmed, false if cancelled
+ */
+function showConfirmDialog(title = 'Smazat jídlo?', message = 'Tato akce je nevratná.', icon = '🗑️') {
+    return new Promise((resolve) => {
+        confirmDialogResolve = resolve;
+
+        document.getElementById('confirmDialogTitle').textContent = title;
+        document.getElementById('confirmDialogMessage').textContent = message;
+        document.querySelector('.confirm-dialog-icon').textContent = icon;
+
+        document.getElementById('confirmDialog').classList.add('active');
+    });
+}
+
+/**
+ * Close confirm dialog
+ * @param {boolean} confirmed - true if user confirmed
+ */
+function closeConfirmDialog(confirmed) {
+    document.getElementById('confirmDialog').classList.remove('active');
+
+    if (confirmDialogResolve) {
+        confirmDialogResolve(confirmed);
+        confirmDialogResolve = null;
+    }
+}
 
 /**
  * Toggle dropdown menu
@@ -1616,6 +1655,13 @@ function setupMacroInputs() {
     const fatInput = document.getElementById('editMealFat');
 
     const updatePercents = () => {
+        // Percentage display elements are optional
+        const proteinPercentEl = document.getElementById('editProteinPercent');
+        const carbsPercentEl = document.getElementById('editCarbsPercent');
+        const fatPercentEl = document.getElementById('editFatPercent');
+
+        if (!proteinPercentEl || !carbsPercentEl || !fatPercentEl) return;
+
         const protein = parseFloat(proteinInput.value) || 0;
         const carbs = parseFloat(carbsInput.value) || 0;
         const fat = parseFloat(fatInput.value) || 0;
@@ -1626,9 +1672,9 @@ function setupMacroInputs() {
             const carbsPercent = Math.round((carbs / AppState.dailyGoals.carbs) * 100);
             const fatPercent = Math.round((fat / AppState.dailyGoals.fat) * 100);
 
-            document.getElementById('editProteinPercent').textContent = proteinPercent + '%';
-            document.getElementById('editCarbsPercent').textContent = carbsPercent + '%';
-            document.getElementById('editFatPercent').textContent = fatPercent + '%';
+            proteinPercentEl.textContent = proteinPercent + '%';
+            carbsPercentEl.textContent = carbsPercent + '%';
+            fatPercentEl.textContent = fatPercent + '%';
         }
     };
 
@@ -1686,13 +1732,10 @@ async function saveMealEdit() {
     try {
         const dateString = getSelectedDateString();
 
-        if (mode === 'manual') {
-            // Manual entry - create new meal in Firestore
+        if (mode === 'manual' || mode === 'new') {
+            // Manual entry or new meal from AI analysis - create new meal in Firestore
             await addMealToFirestore(AppState.currentUser.uid, mealData, dateString);
-            console.log('✅ Manual meal added successfully');
-        } else if (mode === 'new') {
-            // For new meal from AI analysis, it's already saved - just update it
-            await updateMealInFirestore(AppState.currentUser.uid, mealId, mealData, dateString);
+            console.log('✅ Meal added successfully');
         } else {
             // Update existing meal (edit mode)
             await updateMealInFirestore(AppState.currentUser.uid, mealId, mealData, dateString);
@@ -1722,7 +1765,8 @@ async function saveMealEdit() {
 async function deleteMealFromEdit() {
     const mealId = document.getElementById('editMealId').value;
 
-    if (!confirm('Opravdu chcete smazat toto jídlo?')) {
+    const confirmed = await showConfirmDialog('Smazat jídlo?', 'Tato akce je nevratná.');
+    if (!confirmed) {
         return;
     }
 

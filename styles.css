@@ -548,22 +548,23 @@ button:disabled {
 .input-section-header {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     gap: var(--space-md);
     padding: var(--space-lg) var(--space-lg) var(--space-md);
-    position: relative;
 }
 
 .input-section-header h2 {
     margin: 0;
     padding: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    text-align: left;
 }
 
 .quick-add-buttons {
     display: flex;
     gap: var(--space-md);
-    position: absolute;
-    right: var(--space-lg);
+    flex-shrink: 0;
 }
 
 .quick-add-btn {
@@ -1821,6 +1822,86 @@ button:disabled {
     border-radius: var(--radius-lg);
 }
 
+/* ==================== CONFIRM DIALOG ==================== */
+
+.confirm-dialog {
+    z-index: 1100;
+}
+
+.confirm-dialog .confirm-dialog-content {
+    position: relative;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 320px;
+    padding: var(--space-xl);
+    text-align: center;
+    animation: scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: auto;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.confirm-dialog .modal-overlay {
+    background: rgba(10, 14, 26, 0.85);
+}
+
+.confirm-dialog-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-md);
+}
+
+.confirm-dialog-content h3 {
+    margin: 0 0 var(--space-sm);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.confirm-dialog-content p {
+    margin: 0 0 var(--space-lg);
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.confirm-dialog-actions button {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: var(--radius-lg);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.btn-danger:active {
+    transform: scale(0.98);
+}
+
 /* ==================== AUTHENTICATION ==================== */
 
 .auth-screen {
@@ -2352,14 +2433,11 @@ button:disabled {
 
     .input-section-header {
         padding: var(--space-md) var(--space-md) var(--space-sm);
+        gap: var(--space-sm);
     }
 
     .input-section-header h2 {
-        font-size: 16px;
-    }
-
-    .quick-add-buttons {
-        right: var(--space-md);
+        font-size: 14px;
     }
 
     .quick-add-btn {
