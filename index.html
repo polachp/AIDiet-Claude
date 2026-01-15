@@ -136,26 +136,26 @@
                         <div class="user-data-grid">
                             <div class="form-group">
                                 <label for="userAge">Věk (roky):</label>
-                                <input type="number" id="userAge" placeholder="25" min="10" max="120">
+                                <input type="number" id="userAge" placeholder="25" min="10" max="120" oninput="updateTdeePreview()">
                             </div>
                             <div class="form-group">
                                 <label for="userGender">Pohlaví:</label>
-                                <select id="userGender">
+                                <select id="userGender" onchange="updateTdeePreview()">
                                     <option value="male">Muž</option>
                                     <option value="female">Žena</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="userWeight">Váha (kg):</label>
-                                <input type="number" id="userWeight" placeholder="70" min="30" max="300" step="0.1">
+                                <input type="number" id="userWeight" placeholder="70" min="30" max="300" step="0.1" oninput="updateTdeePreview()">
                             </div>
                             <div class="form-group">
                                 <label for="userHeight">Výška (cm):</label>
-                                <input type="number" id="userHeight" placeholder="175" min="100" max="250">
+                                <input type="number" id="userHeight" placeholder="175" min="100" max="250" oninput="updateTdeePreview()">
                             </div>
                             <div class="form-group">
                                 <label for="userActivity">Aktivita:</label>
-                                <select id="userActivity">
+                                <select id="userActivity" onchange="updateTdeePreview()">
                                     <option value="1.2">Sedavé zaměstnání</option>
                                     <option value="1.375">Lehká aktivita (1-3x týdně)</option>
                                     <option value="1.55" selected>Středně aktivní (3-5x týdně)</option>
@@ -165,13 +165,14 @@
                             </div>
                             <div class="form-group">
                                 <label for="userGoal">Cíl:</label>
-                                <select id="userGoal">
+                                <select id="userGoal" onchange="updateTdeePreview()">
                                     <option value="maintain">Udržet váhu (100% TDEE)</option>
                                     <option value="loss-mild">Mírné hubnutí (90% TDEE, -10%)</option>
                                     <option value="loss-moderate">Střední hubnutí (85% TDEE, -15%)</option>
                                     <option value="loss-aggressive">Rychlé hubnutí (80% TDEE, -20%)</option>
                                 </select>
                             </div>
+                            <div id="tdeePreview" class="tdee-preview"></div>
                         </div>
                         <button onclick="saveUserData()" class="btn-primary" style="margin-top: 12px;">💾 Uložit osobní údaje</button>
                     </div>
@@ -249,6 +250,19 @@
                 <div class="confirm-dialog-actions">
                     <button class="btn-secondary" onclick="closeConfirmDialog(false)">Zrušit</button>
                     <button class="btn-danger" onclick="closeConfirmDialog(true)">Smazat</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Dialog -->
+        <div id="infoDialog" class="modal info-dialog">
+            <div class="modal-overlay" onclick="closeInfoDialog()"></div>
+            <div class="info-dialog-content">
+                <div class="info-dialog-icon">✓</div>
+                <h3 id="infoDialogTitle">Informace</h3>
+                <div id="infoDialogBody" class="info-dialog-body"></div>
+                <div class="info-dialog-actions">
+                    <button class="btn-primary" onclick="closeInfoDialog()">OK</button>
                 </div>
             </div>
         </div>
@@ -463,6 +477,7 @@
                         <div class="goal-marker-triangle"></div>
                     </div>
                 </div>
+                <div class="calories-meta" id="caloriesMeta"></div>
             </div>
 
             <!-- Makroživiny - kompaktní řádky -->

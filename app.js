@@ -306,6 +306,76 @@ function updateProviderCapabilities(capabilities) {
 // USER DATA MANAGEMENT
 // =====================================
 
+// Goal percentages for TDEE preview calculation
+const GOAL_PERCENTAGES_PREVIEW = {
+    'loss-aggressive': 0.80,
+    'loss-moderate': 0.85,
+    'loss-mild': 0.90,
+    'maintain': 1.0
+};
+
+/**
+ * Calculate and update TDEE preview in settings
+ */
+function updateTdeePreview() {
+    const preview = document.getElementById('tdeePreview');
+    if (!preview) return;
+
+    const age = parseInt(document.getElementById('userAge').value);
+    const gender = document.getElementById('userGender').value;
+    const weight = parseFloat(document.getElementById('userWeight').value);
+    const height = parseInt(document.getElementById('userHeight').value);
+    const activity = parseFloat(document.getElementById('userActivity').value);
+    const goal = document.getElementById('userGoal').value;
+
+    // Need all values to calculate
+    if (!age || !weight || !height || !activity) {
+        preview.innerHTML = '';
+        return;
+    }
+
+    // BMR calculation (Mifflin-St Jeor)
+    let bmr;
+    if (gender === 'male') {
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+
+    const tdee = Math.round(bmr * activity);
+    const goalPercent = GOAL_PERCENTAGES_PREVIEW[goal] || 1.0;
+    const targetCalories = Math.round(tdee * goalPercent);
+    const deficit = targetCalories - tdee;
+
+    let deficitHtml = '';
+    if (deficit !== 0) {
+        const deficitText = deficit > 0 ? `+${deficit}` : deficit;
+        const deficitLabel = deficit > 0 ? 'Přebytek' : 'Deficit';
+        deficitHtml = `
+            <div class="tdee-preview-row">
+                <span class="tdee-preview-label">${deficitLabel}</span>
+                <span class="tdee-preview-value">${deficitText} kcal</span>
+            </div>
+        `;
+    }
+
+    preview.innerHTML = `
+        <div class="tdee-preview-row">
+            <span class="tdee-preview-label">BMR (bazální metabolismus)</span>
+            <span class="tdee-preview-value">${Math.round(bmr)} kcal</span>
+        </div>
+        <div class="tdee-preview-row">
+            <span class="tdee-preview-label">TDEE (udržovací)</span>
+            <span class="tdee-preview-value">${tdee} kcal</span>
+        </div>
+        ${deficitHtml}
+        <div class="tdee-preview-row">
+            <span class="tdee-preview-label">Denní cíl</span>
+            <span class="tdee-preview-value highlight">${targetCalories} kcal</span>
+        </div>
+    `;
+}
+
 /**
  * Save user profile data to Firestore
  */
@@ -337,25 +407,8 @@ async function saveUserData() {
         // Aktualizuj userData v AIService pro personalizaci promptů
         aiService.setUserData(profileData);
 
-        // Build alert message with TDEE and deficit info
-        let message = 'Osobní údaje byly uloženy!\n\n';
-        message += `BMR (bazální metabolismus): ${calculatedGoals.bmr} kcal\n`;
-        message += `TDEE (udržovací kalorie): ${calculatedGoals.tdee} kcal\n`;
-
-        if (calculatedGoals.deficit !== 0) {
-            const deficitText = calculatedGoals.deficit > 0 ? `+${calculatedGoals.deficit}` : calculatedGoals.deficit;
-            message += `Deficit/Přebytek: ${deficitText} kcal/den\n\n`;
-        } else {
-            message += '\n';
-        }
-
-        message += 'Vaše denní cílové hodnoty:\n';
-        message += `Kalorie: ${calculatedGoals.calories} kcal\n`;
-        message += `Bílkoviny: ${calculatedGoals.protein} g\n`;
-        message += `Sacharidy: ${calculatedGoals.carbs} g\n`;
-        message += `Tuky: ${calculatedGoals.fat} g`;
-
-        alert(message);
+        // Show styled info dialog with calculated goals
+        showGoalsInfoDialog(calculatedGoals);
 
         updateSummary();
         updateWeeklyTrend();
@@ -399,6 +452,9 @@ async function loadUserDataFromFirestore() {
             document.getElementById('userHeight').value = AppState.userData.height;
             document.getElementById('userActivity').value = AppState.userData.activity;
             document.getElementById('userGoal').value = AppState.userData.goal;
+
+            // Update TDEE preview
+            updateTdeePreview();
 
             console.log('✅ User data loaded from Firestore');
         } else {
@@ -932,6 +988,78 @@ function closeConfirmDialog(confirmed) {
 }
 
 /**
+ * Show info dialog with structured content
+ * @param {string} title - Dialog title
+ * @param {string} bodyHTML - HTML content for body
+ * @param {string} icon - Icon character (default checkmark)
+ */
+function showInfoDialog(title, bodyHTML, icon = '✓') {
+    document.getElementById('infoDialogTitle').textContent = title;
+    document.getElementById('infoDialogBody').innerHTML = bodyHTML;
+    document.querySelector('.info-dialog-icon').textContent = icon;
+    document.getElementById('infoDialog').classList.add('active');
+}
+
+/**
+ * Close info dialog
+ */
+function closeInfoDialog() {
+    document.getElementById('infoDialog').classList.remove('active');
+}
+
+/**
+ * Show nutrition goals info dialog
+ * @param {object} goals - Calculated goals object
+ */
+function showGoalsInfoDialog(goals) {
+    let bodyHTML = `
+        <div class="info-dialog-row">
+            <span class="info-dialog-label">BMR (bazální metabolismus)</span>
+            <span class="info-dialog-value">${goals.bmr} kcal</span>
+        </div>
+        <div class="info-dialog-row">
+            <span class="info-dialog-label">TDEE (udržovací kalorie)</span>
+            <span class="info-dialog-value">${goals.tdee} kcal</span>
+        </div>
+    `;
+
+    if (goals.deficit !== 0) {
+        const deficitText = goals.deficit > 0 ? `+${goals.deficit}` : goals.deficit;
+        const deficitLabel = goals.deficit > 0 ? 'Přebytek' : 'Deficit';
+        bodyHTML += `
+            <div class="info-dialog-row">
+                <span class="info-dialog-label">${deficitLabel}</span>
+                <span class="info-dialog-value">${deficitText} kcal/den</span>
+            </div>
+        `;
+    }
+
+    bodyHTML += `
+        <div class="info-dialog-section">
+            <div class="info-dialog-section-title">Denní cílové hodnoty</div>
+            <div class="info-dialog-row highlight">
+                <span class="info-dialog-label">Kalorie</span>
+                <span class="info-dialog-value">${goals.calories} kcal</span>
+            </div>
+            <div class="info-dialog-row">
+                <span class="info-dialog-label">Bílkoviny</span>
+                <span class="info-dialog-value">${goals.protein} g</span>
+            </div>
+            <div class="info-dialog-row">
+                <span class="info-dialog-label">Sacharidy</span>
+                <span class="info-dialog-value">${goals.carbs} g</span>
+            </div>
+            <div class="info-dialog-row">
+                <span class="info-dialog-label">Tuky</span>
+                <span class="info-dialog-value">${goals.fat} g</span>
+            </div>
+        </div>
+    `;
+
+    showInfoDialog('Údaje uloženy', bodyHTML, '✓');
+}
+
+/**
  * Show toast notification
  * @param {string} message - Message to display
  * @param {string} type - 'success' or 'error'
@@ -1055,6 +1183,15 @@ function updateSummary() {
         progressFill.style.background = getProgressColor(caloriesPercent);
         caloriesPercentageEl.style.color = '#FFFFFF';
         caloriesPercentageEl.style.fontWeight = caloriesPercent >= 95 ? '700' : '600';
+
+        // Update BMR/TDEE meta info
+        const caloriesMeta = document.getElementById('caloriesMeta');
+        if (caloriesMeta) {
+            caloriesMeta.innerHTML = `
+                <span><span class="calories-meta-label">BMR:</span> ${AppState.dailyGoals.bmr} kcal</span>
+                <span><span class="calories-meta-label">TDEE:</span> ${AppState.dailyGoals.tdee} kcal</span>
+            `;
+        }
 
         updateMacroBox('protein', totals.protein, AppState.dailyGoals.protein);
         updateMacroBox('carbs', totals.carbs, AppState.dailyGoals.carbs);
