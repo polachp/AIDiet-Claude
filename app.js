@@ -1077,12 +1077,16 @@ function updateSummary() {
     }
 }
 
-// iOS-style progress colors
+// Progressive calorie intake colors (intuitive traffic light progression)
+// Designed for dark UI - colors are vibrant but not harsh
 const PROGRESS_COLORS = {
-    over: '#FF3B30',    // iOS Red - exceeded goal
-    atGoal: '#FF9500',  // iOS Orange - at goal
-    good: '#34C759',    // iOS Green - good progress
-    early: 'rgba(255, 255, 255, 0.9)' // White - early progress
+    minimal: 'rgba(255, 255, 255, 0.7)',  // 0-39% - Bílá/šedá - klidně, začínáš
+    low: '#64B5F6',                        // 40-59% - Světle modrá - pohoda
+    moderate: '#4CAF50',                   // 60-79% - Zelená - dobrý progress
+    good: '#8BC34A',                       // 80-94% - Světle zelená - blížíš se
+    warning: '#FFB300',                    // 95-104% - Žlutá/Amber - u hranice
+    caution: '#FF9800',                    // 105-114% - Oranžová - lehce přes
+    over: '#F44336'                        // 115%+ - Červená - hodně přes
 };
 
 // Macro-specific colors for normal range
@@ -1093,15 +1097,18 @@ const MACRO_COLORS = {
 };
 
 /**
- * Get progress bar color based on percentage
+ * Get progress bar color based on percentage - progressive palette
  * @param {number} percent - Percentage value
  * @returns {string} Color value
  */
 function getProgressColor(percent) {
-    if (percent >= 110) return PROGRESS_COLORS.over;
-    if (percent >= 95) return PROGRESS_COLORS.atGoal;
-    if (percent >= 80) return PROGRESS_COLORS.good;
-    return PROGRESS_COLORS.early;
+    if (percent >= 115) return PROGRESS_COLORS.over;      // Červená - hodně přes
+    if (percent >= 105) return PROGRESS_COLORS.caution;   // Oranžová - lehce přes
+    if (percent >= 95) return PROGRESS_COLORS.warning;    // Žlutá - u hranice
+    if (percent >= 80) return PROGRESS_COLORS.good;       // Světle zelená - blížíš se
+    if (percent >= 60) return PROGRESS_COLORS.moderate;   // Zelená - dobrý
+    if (percent >= 40) return PROGRESS_COLORS.low;        // Modrá - pohoda
+    return PROGRESS_COLORS.minimal;                       // Bílá - začínáš
 }
 
 /**
@@ -1186,20 +1193,11 @@ async function updateWeeklyTrend() {
             const caloriesGoal = AppState.dailyGoals.calories;
             const percent = caloriesGoal > 0 ? Math.round((dayData.totalCalories / caloriesGoal) * 100) : 0;
 
-            // Calculate bar height (percentage of max)
-            const barHeight = maxCalories > 0 ? (dayData.totalCalories / maxCalories) * 100 : 0;
+            // Calculate bar height - based on goal percentage, capped at 100%
+            const barHeight = Math.min(percent, 100);
 
-            // Determine bar style class
-            let barClass = 'trend-bar';
-            if (percent >= 95 && percent <= 105) {
-                barClass += ' goal-reached';
-            } else if (percent > 105) {
-                barClass += ' over-goal';
-            } else if (dayData.totalCalories > 0) {
-                barClass += ' in-progress';
-            } else {
-                barClass += ' no-data';
-            }
+            // Get bar color using same logic as daily summary
+            const barColor = dayData.totalCalories > 0 ? getProgressColor(percent) : 'rgba(255, 255, 255, 0.08)';
 
             const selectedDateString = getSelectedDateString();
             const isSelected = dayData.date === selectedDateString;
@@ -1207,12 +1205,15 @@ async function updateWeeklyTrend() {
             let columnClasses = 'trend-column';
             if (isSelected) columnClasses += ' selected';
 
+            // Percent text color matches bar
+            const percentColor = dayData.totalCalories > 0 ? barColor : 'var(--text-tertiary)';
+
             chartHTML += `
                 <div class="${columnClasses}" data-date="${dayData.date}">
                     <div class="trend-bar-container">
-                        <div class="${barClass}" style="height: ${barHeight}%"></div>
+                        <div class="trend-bar" style="height: ${barHeight}%; background: ${barColor};"></div>
                     </div>
-                    <div class="trend-percent">${percent}%</div>
+                    <div class="trend-percent" style="color: ${percentColor};">${percent}%</div>
                     <div class="trend-day-name">${dayName}</div>
                     <div class="trend-day-date">${dayDate}</div>
                 </div>
