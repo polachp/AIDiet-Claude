@@ -209,6 +209,11 @@
                     <button class="modal-close" onclick="closeFoodHistoryModal()">Zavřít</button>
                 </div>
                 <div class="modal-body">
+                    <!-- Search -->
+                    <div class="food-search-container">
+                        <input type="text" id="foodSearchInput" class="food-search-input" placeholder="Hledat jídlo..." oninput="filterFoodList()">
+                    </div>
+
                     <!-- Tabs for History/Favorites -->
                     <div class="food-modal-tabs">
                         <button class="food-modal-tab active" id="historyTab" onclick="switchFoodModalTab('history')">

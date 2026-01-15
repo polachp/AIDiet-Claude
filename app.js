@@ -1944,11 +1944,13 @@ async function deleteMealSilent(mealId) {
  */
 let currentFoodModalTab = 'history';
 let currentMealFavoriteId = null;
+let currentFoodListData = []; // Store loaded data for filtering
 
 /**
  * Open food history modal (shows history tab)
  */
 function openFoodHistoryModal() {
+    document.getElementById('foodSearchInput').value = '';
     switchFoodModalTab('history');
     const modal = document.getElementById('foodHistoryModal');
     modal.classList.add('active');
@@ -1958,6 +1960,7 @@ function openFoodHistoryModal() {
  * Open favorites modal (shows favorites tab)
  */
 function openFavoritesModal() {
+    document.getElementById('foodSearchInput').value = '';
     switchFoodModalTab('favorites');
     const modal = document.getElementById('foodHistoryModal');
     modal.classList.add('active');
@@ -2017,37 +2020,65 @@ async function loadFoodList(type) {
             foods = await getFavoriteFoods(AppState.currentUser.uid);
         }
 
-        if (foods.length === 0) {
-            const emptyMessage = type === 'history'
-                ? 'Zatím žádná historie jídel.'
-                : 'Zatím žádná oblíbená jídla. Přidejte je hvězdičkou při přidání nebo editaci jídla.';
-            listContainer.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
-            return;
-        }
+        // Store for filtering
+        currentFoodListData = foods.map(food =>
+            type === 'favorites' ? { ...food, favoriteId: food.id } : food
+        );
 
-        listContainer.innerHTML = foods.map(food => {
-            // For favorites, pass the favoriteId so modal can show delete option
-            const foodData = type === 'favorites'
-                ? { ...food, favoriteId: food.id }
-                : food;
-            const foodJson = JSON.stringify(foodData).replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
-            return `
-                <div class="food-item" onclick="addFoodFromList(${foodJson})">
-                    <div class="food-item-info">
-                        <div class="food-item-name">${food.name}</div>
-                        <div class="food-item-macros">
-                            ${food.calories} kcal • 🥩 ${food.protein}g • 🌾 ${food.carbs}g • 🥑 ${food.fat}g
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        renderFoodList(currentFoodListData, type);
 
     } catch (error) {
         console.error('Error loading food list:', error);
         listContainer.innerHTML = '<p class="empty-state">Chyba při načítání</p>';
     }
+}
+
+/**
+ * Render food list to DOM
+ */
+function renderFoodList(foods, type) {
+    const listContainer = document.getElementById('foodHistoryList');
+
+    if (foods.length === 0) {
+        const searchValue = document.getElementById('foodSearchInput').value;
+        const emptyMessage = searchValue
+            ? 'Žádné výsledky.'
+            : (type === 'history'
+                ? 'Zatím žádná historie jídel.'
+                : 'Zatím žádná oblíbená jídla.');
+        listContainer.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+        return;
+    }
+
+    listContainer.innerHTML = foods.map(food => {
+        const foodJson = JSON.stringify(food).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        return `
+            <div class="food-item" onclick="addFoodFromList(${foodJson})">
+                <div class="food-item-info">
+                    <span class="food-item-name">${food.name}</span>
+                    <span class="food-item-calories">${food.calories} kcal</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Filter food list by search query
+ */
+function filterFoodList() {
+    const searchValue = document.getElementById('foodSearchInput').value.toLowerCase().trim();
+
+    if (!searchValue) {
+        renderFoodList(currentFoodListData, currentFoodModalTab);
+        return;
+    }
+
+    const filtered = currentFoodListData.filter(food =>
+        food.name.toLowerCase().includes(searchValue)
+    );
+
+    renderFoodList(filtered, currentFoodModalTab);
 }
 
 /**

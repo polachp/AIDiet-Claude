@@ -760,9 +760,26 @@ async function checkIsFavorite(userId, foodName) {
  */
 async function getFoodHistory(userId) {
     try {
-        const historyRef = db.collection('users').doc(userId).collection('foodHistory');
-        const snapshot = await historyRef.orderBy('lastUsed', 'desc').limit(10).get();
-        return snapshotToArray(snapshot);
+        const allMeals = [];
+        const seenNames = new Set();
+
+        // Get meals from last 7 days
+        for (let i = 0; i < 7; i++) {
+            const dateString = getDateString(i);
+            const mealsRef = db.collection('users').doc(userId).collection('meals').doc(dateString).collection('items');
+            const snapshot = await mealsRef.orderBy('timestamp', 'desc').get();
+
+            snapshot.forEach(doc => {
+                const meal = { id: doc.id, ...doc.data() };
+                // Deduplicate by name (keep first occurrence = most recent)
+                if (!seenNames.has(meal.name.toLowerCase())) {
+                    seenNames.add(meal.name.toLowerCase());
+                    allMeals.push(meal);
+                }
+            });
+        }
+
+        return allMeals;
     } catch (error) {
         console.error('Error fetching food history:', error);
         return [];

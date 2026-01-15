@@ -2236,13 +2236,81 @@ button:disabled {
 
 /* ==================== FOOD HISTORY/FAVORITES MODAL ==================== */
 
+#foodHistoryModal.modal {
+    align-items: stretch;
+}
+
+#foodHistoryModal .modal-content {
+    height: calc(100vh - 24px);
+    max-height: calc(100vh - 24px);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    margin-top: 24px;
+}
+
+#foodHistoryModal .modal-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#foodHistoryModal .food-list {
+    margin-bottom: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent;
+}
+
+#foodHistoryModal .food-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+#foodHistoryModal .food-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#foodHistoryModal .food-list::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: var(--radius-full);
+}
+
+#foodHistoryModal .food-list::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+.food-search-container {
+    margin-bottom: var(--space-md);
+    flex-shrink: 0;
+}
+
+.food-search-input {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-input);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: 15px;
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.food-search-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.food-search-input:focus {
+    border-color: var(--primary);
+}
+
 .food-modal-tabs {
     display: flex;
     gap: var(--space-sm);
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-md);
     background: var(--bg-input);
     border-radius: var(--radius-lg);
     padding: 4px;
+    flex-shrink: 0;
 }
 
 .food-modal-tab {
@@ -2278,10 +2346,11 @@ button:disabled {
     height: 16px;
 }
 
-.food-list {
+#foodHistoryModal .food-list {
     display: flex;
     flex-direction: column;
-    max-height: 400px;
+    flex: 1 1 auto;
+    height: calc(100vh - 250px);
     overflow-y: auto;
     border-radius: var(--radius-lg);
     background: var(--bg-input);
@@ -2291,7 +2360,7 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid var(--border-light);
     cursor: pointer;
     transition: background var(--transition-fast);
@@ -2306,41 +2375,29 @@ button:disabled {
 }
 
 .food-item-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     flex: 1;
     min-width: 0;
+    gap: var(--space-md);
 }
 
 .food-item-name {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
     color: var(--text-primary);
-    margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
 }
 
-.food-item-macros {
-    font-size: 13px;
-    color: var(--text-tertiary);
-}
-
-.food-item-delete {
-    background: transparent;
-    color: var(--accent-red);
-    border: none;
-    font-size: 18px;
-    padding: var(--space-sm);
-    min-height: 36px;
-    min-width: 36px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    margin-left: var(--space-md);
-}
-
-.food-item-delete:hover {
-    background: rgba(255, 82, 82, 0.15);
+.food-item-calories {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 /* Favorite Button */
