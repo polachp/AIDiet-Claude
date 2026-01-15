@@ -576,7 +576,7 @@ function displayMeals() {
                 <span class="meal-macro-item">🌾 ${meal.carbs} g</span>
                 <span class="meal-macro-item">🥑 ${meal.fat} g</span>
             </div>
-            <button class="btn-delete-compact" onclick="event.stopPropagation(); deleteMeal('${meal.id}')" title="Smazat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <button class="btn-delete-compact" onclick="event.stopPropagation(); deleteMeal('${meal.id}')" title="Smazat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M6 6v12a2 2 0 002 2h8a2 2 0 002-2V6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
         </div>
     `;
     }).join('');
@@ -1566,12 +1566,20 @@ function openManualMealModal() {
  * @param {string} mode - 'edit' for existing meal, 'new' for newly added meal
  * @param {Object} meal - Meal data (id, name, calories, protein, carbs, fat)
  */
+// Store favoriteId for remove action
+let currentModalFavoriteId = null;
+
 async function openMealEditModal(mode, meal) {
     const modal = document.getElementById('mealEditModal');
     const title = document.getElementById('mealEditTitle');
     const deleteBtn = document.getElementById('mealEditDeleteBtn');
     const saveBtn = document.getElementById('mealEditSaveBtn');
     const cancelBtn = document.getElementById('mealEditCancelBtn');
+    const favoriteBtn = document.getElementById('mealFavoriteBtn');
+    const removeFavoriteBtn = document.getElementById('removeFavoriteBtn');
+
+    // Store favoriteId if opening from favorites list
+    currentModalFavoriteId = meal.favoriteId || null;
 
     // Set mode
     document.getElementById('editMealMode').value = mode;
@@ -1596,16 +1604,29 @@ async function openMealEditModal(mode, meal) {
         saveBtn.textContent = 'Uložit';
         cancelBtn.textContent = 'Zrušit';
         deleteBtn.style.display = 'block';
-    } else {
-        // mode === 'new'
+        favoriteBtn.style.display = 'flex';
+        removeFavoriteBtn.style.display = 'none';
+        // Check favorite status for edit mode
+        await checkMealFavoriteStatus(meal.name);
+    } else if (currentModalFavoriteId) {
+        // Opening from favorites - show remove button instead of star
         title.textContent = 'Přidat jídlo';
-        saveBtn.textContent = 'OK';
+        saveBtn.textContent = 'Přidat';
         cancelBtn.textContent = 'Zrušit';
         deleteBtn.style.display = 'none';
+        favoriteBtn.style.display = 'none';
+        removeFavoriteBtn.style.display = 'flex';
+    } else {
+        // mode === 'new' or 'manual' without favoriteId
+        title.textContent = 'Přidat jídlo';
+        saveBtn.textContent = 'Přidat';
+        cancelBtn.textContent = 'Zrušit';
+        deleteBtn.style.display = 'none';
+        favoriteBtn.style.display = 'flex';
+        removeFavoriteBtn.style.display = 'none';
+        // Check favorite status
+        await checkMealFavoriteStatus(meal.name);
     }
-
-    // Check favorite status
-    await checkMealFavoriteStatus(meal.name);
 
     // Show modal
     modal.classList.add('active');
@@ -1746,9 +1767,8 @@ async function saveMealEdit() {
 
         console.log('✅ Meal saved successfully');
 
-        // Close modal
-        const modal = document.getElementById('mealEditModal');
-        modal.classList.remove('active');
+        // Close modal (don't delete meal - we just saved it)
+        closeMealEditModal(false);
 
         // Update weekly trend after edit (calories may have changed)
         updateWeeklyTrend();
@@ -1897,10 +1917,11 @@ async function loadFoodList(type) {
         }
 
         listContainer.innerHTML = foods.map(food => {
-            const foodJson = JSON.stringify(food).replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            const deleteBtn = type === 'favorites'
-                ? `<button class="food-item-delete" onclick="event.stopPropagation(); removeFavorite('${food.id}')" title="Odebrat z oblíbených">✕</button>`
-                : '';
+            // For favorites, pass the favoriteId so modal can show delete option
+            const foodData = type === 'favorites'
+                ? { ...food, favoriteId: food.id }
+                : food;
+            const foodJson = JSON.stringify(foodData).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
             return `
                 <div class="food-item" onclick="addFoodFromList(${foodJson})">
@@ -1910,7 +1931,6 @@ async function loadFoodList(type) {
                             ${food.calories} kcal • 🥩 ${food.protein}g • 🌾 ${food.carbs}g • 🥑 ${food.fat}g
                         </div>
                     </div>
-                    ${deleteBtn}
                 </div>
             `;
         }).join('');
@@ -1923,8 +1943,9 @@ async function loadFoodList(type) {
 
 /**
  * Add food from history/favorites list
+ * Opens edit modal for review before saving (doesn't save immediately)
  */
-async function addFoodFromList(food) {
+function addFoodFromList(food) {
     closeFoodHistoryModal();
 
     const nutritionData = {
@@ -1932,14 +1953,16 @@ async function addFoodFromList(food) {
         calories: food.calories,
         protein: food.protein,
         carbs: food.carbs,
-        fat: food.fat
+        fat: food.fat,
+        favoriteId: food.favoriteId || null  // Pass favoriteId if from favorites
     };
 
-    await addMeal(nutritionData);
+    // Open modal for review - 'manual' mode creates new meal on save
+    openMealEditModal('manual', nutritionData);
 }
 
 /**
- * Remove favorite food
+ * Remove favorite food from list
  */
 async function removeFavorite(favoriteId) {
     if (!AppState.currentUser) return;
@@ -1948,6 +1971,29 @@ async function removeFavorite(favoriteId) {
         await removeFavoriteFood(AppState.currentUser.uid, favoriteId);
         // Reload the list
         await loadFoodList('favorites');
+    } catch (error) {
+        console.error('Error removing favorite:', error);
+        alert('Chyba při odebírání z oblíbených');
+    }
+}
+
+/**
+ * Remove from favorites and close modal (used when opening favorite for adding)
+ */
+async function removeFromFavoritesAndClose() {
+    if (!AppState.currentUser || !currentModalFavoriteId) return;
+
+    const confirmed = await showConfirmDialog(
+        'Odebrat z oblíbených?',
+        'Jídlo bude odebráno z oblíbených.',
+        '⭐'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        await removeFavoriteFood(AppState.currentUser.uid, currentModalFavoriteId);
+        closeMealEditModal(false);
     } catch (error) {
         console.error('Error removing favorite:', error);
         alert('Chyba při odebírání z oblíbených');

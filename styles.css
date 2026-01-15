@@ -33,7 +33,7 @@
     --accent-green: #00E676;
     --accent-yellow: #FFD93D;
     --accent-orange: #FF9500;
-    --accent-red: #FF5252;
+    --accent-red: #E57373;
     --accent-purple: #B388FF;
 
     /* Gradient Cards */
@@ -2243,12 +2243,51 @@ button:disabled {
 }
 
 .btn-favorite.is-favorite {
-    color: var(--accent-yellow);
+    color: var(--accent-red);
+}
+
+.btn-favorite.is-favorite:hover {
+    color: var(--accent-red);
+    background: rgba(229, 115, 115, 0.15);
 }
 
 .btn-favorite svg {
     width: 24px;
     height: 24px;
+}
+
+.btn-remove-favorite {
+    position: absolute;
+    right: var(--space-lg);
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: var(--space-sm);
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    color: var(--accent-red);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove-favorite:hover {
+    background: rgba(229, 115, 115, 0.15);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.btn-remove-favorite:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.btn-remove-favorite svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--accent-red);
 }
 
 /* ==================== BOTTOM NAVIGATION ==================== */
