@@ -1705,6 +1705,10 @@ async function openMealEditModal(mode, meal) {
     // Configure UI based on mode
     const viewingPastDay = !isSelectedDateToday();
 
+    // Reset save button state (in case previous save was in progress)
+    saveBtn.disabled = false;
+    saveBtn.classList.remove('saving');
+
     if (mode === 'edit') {
         title.textContent = 'Upravit jídlo';
         saveBtn.textContent = 'Uložit';
@@ -1831,6 +1835,11 @@ function closeMealEditModal(deleteMeal = false) {
         deleteMealSilent(mealId);
     }
 
+    // Reset save button state
+    const saveBtn = document.getElementById('mealEditSaveBtn');
+    saveBtn.disabled = false;
+    saveBtn.classList.remove('saving');
+
     modal.classList.remove('active');
 }
 
@@ -1838,6 +1847,14 @@ function closeMealEditModal(deleteMeal = false) {
  * Save meal edit
  */
 async function saveMealEdit() {
+    const saveBtn = document.getElementById('mealEditSaveBtn');
+
+    // Prevent double-click
+    if (saveBtn.disabled) return;
+    saveBtn.disabled = true;
+    saveBtn.classList.add('saving');
+    saveBtn.textContent = 'Ukládám...';
+
     const mode = document.getElementById('editMealMode').value;
     const mealId = document.getElementById('editMealId').value;
 
@@ -1849,14 +1866,23 @@ async function saveMealEdit() {
         fat: parseFloat(document.getElementById('editMealFat').value) || 0
     };
 
+    // Helper to reset button state
+    const resetBtn = () => {
+        saveBtn.disabled = false;
+        saveBtn.classList.remove('saving');
+        saveBtn.textContent = 'Uložit';
+    };
+
     // Validate
     if (!mealData.name) {
         alert('Zadejte název jídla');
+        resetBtn();
         return;
     }
 
     if (!AppState.currentUser) {
         alert('Nejste přihlášen');
+        resetBtn();
         return;
     }
 
@@ -1886,6 +1912,7 @@ async function saveMealEdit() {
     } catch (error) {
         console.error('Error saving meal:', error);
         alert('Chyba při ukládání jídla');
+        resetBtn();
     }
 }
 

@@ -478,6 +478,11 @@ button:disabled {
     transform: none !important;
 }
 
+button:disabled.saving {
+    opacity: 0.7;
+    cursor: wait;
+}
+
 /* ==================== TABS ==================== */
 
 .tabs {
