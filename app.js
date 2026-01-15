@@ -519,6 +519,77 @@ async function deleteMeal(id) {
 }
 
 /**
+ * Copy meal from past day to today
+ */
+async function copyMealToToday(meal) {
+    if (!AppState.currentUser) {
+        alert('Nejste přihlášen. Přihlaste se prosím.');
+        return;
+    }
+
+    try {
+        const mealData = {
+            name: meal.name,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat
+        };
+
+        // Add to today (null = today's date string)
+        const todayString = getTodayString();
+        await addMealToFirestore(AppState.currentUser.uid, mealData, todayString);
+
+        // Update food history
+        await updateFoodHistory(AppState.currentUser.uid, mealData);
+
+        console.log('✅ Meal copied to today:', mealData.name);
+
+        // Update weekly trend
+        updateWeeklyTrend();
+
+        // Show toast notification
+        showToast(`"${mealData.name}" přidáno do dneška`, 'success');
+
+    } catch (error) {
+        console.error('Error copying meal to today:', error);
+        showToast('Chyba při kopírování jídla', 'error');
+    }
+}
+
+/**
+ * Copy current meal from modal to today (used in edit modal for past days)
+ */
+async function copyCurrentMealToToday() {
+    if (!currentModalMealData) return;
+
+    // Get current values from form (user might have edited them)
+    const mealData = {
+        name: document.getElementById('editMealName').value.trim(),
+        calories: parseInt(document.getElementById('editMealCalories').value) || 0,
+        protein: parseFloat(document.getElementById('editMealProtein').value) || 0,
+        carbs: parseFloat(document.getElementById('editMealCarbs').value) || 0,
+        fat: parseFloat(document.getElementById('editMealFat').value) || 0
+    };
+
+    // Confirm dialog with green button
+    const confirmed = await showConfirmDialog(
+        'Přidat do dneška?',
+        `"${mealData.name}" (${mealData.calories} kcal) bude přidáno do dnešního dne.`,
+        '📋',
+        'Přidat',
+        'btn-primary'
+    );
+
+    if (!confirmed) return;
+
+    await copyMealToToday(mealData);
+
+    // Close modal after copying
+    closeMealEditModal(false);
+}
+
+/**
  * Show skeleton loading state for meals list
  */
 function showMealsSkeleton() {
@@ -826,15 +897,22 @@ let confirmDialogResolve = null;
  * @param {string} title - Dialog title
  * @param {string} message - Dialog message
  * @param {string} icon - Emoji icon (default: 🗑️)
+ * @param {string} confirmText - Text for confirm button (default: 'Smazat')
+ * @param {string} confirmClass - CSS class for confirm button (default: 'btn-danger')
  * @returns {Promise<boolean>} - true if confirmed, false if cancelled
  */
-function showConfirmDialog(title = 'Smazat jídlo?', message = 'Tato akce je nevratná.', icon = '🗑️') {
+function showConfirmDialog(title = 'Smazat jídlo?', message = 'Tato akce je nevratná.', icon = '🗑️', confirmText = 'Smazat', confirmClass = 'btn-danger') {
     return new Promise((resolve) => {
         confirmDialogResolve = resolve;
 
         document.getElementById('confirmDialogTitle').textContent = title;
         document.getElementById('confirmDialogMessage').textContent = message;
         document.querySelector('.confirm-dialog-icon').textContent = icon;
+
+        // Update confirm button text and class
+        const confirmBtn = document.querySelector('.confirm-dialog-actions .btn-danger, .confirm-dialog-actions .btn-primary');
+        confirmBtn.textContent = confirmText;
+        confirmBtn.className = confirmClass;
 
         document.getElementById('confirmDialog').classList.add('active');
     });
@@ -851,6 +929,26 @@ function closeConfirmDialog(confirmed) {
         confirmDialogResolve(confirmed);
         confirmDialogResolve = null;
     }
+}
+
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {string} type - 'success' or 'error'
+ */
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+
+    toastMessage.textContent = message;
+    toastIcon.textContent = type === 'success' ? '✓' : '✕';
+    toast.className = `toast toast-${type} active`;
+
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('active');
+    }, 3000);
 }
 
 /**
@@ -1568,6 +1666,8 @@ function openManualMealModal() {
  */
 // Store favoriteId for remove action
 let currentModalFavoriteId = null;
+// Store current meal data for copy to today
+let currentModalMealData = null;
 
 async function openMealEditModal(mode, meal) {
     const modal = document.getElementById('mealEditModal');
@@ -1577,9 +1677,12 @@ async function openMealEditModal(mode, meal) {
     const cancelBtn = document.getElementById('mealEditCancelBtn');
     const favoriteBtn = document.getElementById('mealFavoriteBtn');
     const removeFavoriteBtn = document.getElementById('removeFavoriteBtn');
+    const copyToTodayBtn = document.getElementById('copyToTodayBtn');
 
     // Store favoriteId if opening from favorites list
     currentModalFavoriteId = meal.favoriteId || null;
+    // Store meal data for copy to today
+    currentModalMealData = meal;
 
     // Set mode
     document.getElementById('editMealMode').value = mode;
@@ -1599,6 +1702,8 @@ async function openMealEditModal(mode, meal) {
     setupMacroInputs();
 
     // Configure UI based on mode
+    const viewingPastDay = !isSelectedDateToday();
+
     if (mode === 'edit') {
         title.textContent = 'Upravit jídlo';
         saveBtn.textContent = 'Uložit';
@@ -1606,6 +1711,8 @@ async function openMealEditModal(mode, meal) {
         deleteBtn.style.display = 'block';
         favoriteBtn.style.display = 'flex';
         removeFavoriteBtn.style.display = 'none';
+        // Show copy to today button only for past days
+        copyToTodayBtn.style.display = viewingPastDay ? 'flex' : 'none';
         // Check favorite status for edit mode
         await checkMealFavoriteStatus(meal.name);
     } else if (currentModalFavoriteId) {
@@ -1616,6 +1723,7 @@ async function openMealEditModal(mode, meal) {
         deleteBtn.style.display = 'none';
         favoriteBtn.style.display = 'none';
         removeFavoriteBtn.style.display = 'flex';
+        copyToTodayBtn.style.display = 'none';
     } else {
         // mode === 'new' or 'manual' without favoriteId
         title.textContent = 'Přidat jídlo';
@@ -1624,6 +1732,7 @@ async function openMealEditModal(mode, meal) {
         deleteBtn.style.display = 'none';
         favoriteBtn.style.display = 'flex';
         removeFavoriteBtn.style.display = 'none';
+        copyToTodayBtn.style.display = 'none';
         // Check favorite status
         await checkMealFavoriteStatus(meal.name);
     }

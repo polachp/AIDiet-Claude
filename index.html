@@ -248,6 +248,12 @@
             </div>
         </div>
 
+        <!-- Toast Notification -->
+        <div id="toast" class="toast">
+            <span id="toastIcon" class="toast-icon">✓</span>
+            <span id="toastMessage" class="toast-message"></span>
+        </div>
+
         <!-- Meal Edit Modal -->
         <div id="mealEditModal" class="modal">
             <div class="modal-overlay" onclick="closeMealEditModal()"></div>
@@ -268,6 +274,12 @@
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                             <path d="M4 4L20 20" stroke-width="2.5"/>
+                        </svg>
+                    </button>
+                    <button id="copyToTodayBtn" class="btn-copy-today-modal" onclick="copyCurrentMealToToday()" title="Přidat do dneška" style="display: none;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2"/>
+                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                         </svg>
                     </button>
                 </div>

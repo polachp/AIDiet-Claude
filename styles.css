@@ -1520,6 +1520,63 @@ button:disabled {
     transform: scale(0.95);
 }
 
+.btn-copy-today {
+    background: transparent;
+    color: var(--accent-green);
+    padding: 8px;
+    min-height: 40px;
+    min-width: 40px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-copy-today svg {
+    stroke: var(--accent-green);
+}
+
+.btn-copy-today:hover {
+    background: rgba(0, 230, 118, 0.15);
+    transform: scale(1.1);
+}
+
+.btn-copy-today:active {
+    transform: scale(0.95);
+}
+
+.btn-copy-today-modal {
+    position: absolute;
+    right: calc(var(--space-lg) + 44px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: var(--space-sm);
+    min-height: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    color: var(--accent-green);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-copy-today-modal:hover {
+    color: var(--accent-green);
+    background: rgba(0, 230, 118, 0.15);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.btn-copy-today-modal svg {
+    width: 22px;
+    height: 22px;
+}
+
 /* ==================== MODAL ==================== */
 
 .modal {
@@ -1900,6 +1957,74 @@ button:disabled {
 
 .btn-danger:active {
     transform: scale(0.98);
+}
+
+.confirm-dialog-actions .btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+}
+
+.confirm-dialog-actions .btn-primary:hover {
+    filter: brightness(1.1);
+}
+
+.confirm-dialog-actions .btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* ==================== TOAST NOTIFICATION ==================== */
+
+.toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bg-card-solid);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 1200;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.toast.active {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.toast-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.toast-success .toast-icon {
+    background: var(--accent-green);
+    color: var(--bg-base);
+}
+
+.toast-error .toast-icon {
+    background: var(--accent-red);
+    color: white;
+}
+
+.toast-message {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
 }
 
 /* ==================== AUTHENTICATION ==================== */
