@@ -188,7 +188,7 @@ OR clearAppData() on logout
 
 **Auth Toggle:** `authScreen` and `mainApp` switched via `display: none/block`. Auth state observer handles transitions.
 
-**Meal Edit Modal:** After AI analysis, `openMealEditModal('new', nutritionData)` displays results for user review/edit before saving. Mode `'edit'` for existing meals.
+**Meal Edit Modal:** After AI analysis, `openMealEditModal('new', nutritionData)` displays results for user review/edit before saving. Mode `'edit'` for existing meals. Mode `'manual'` for items from history/favorites - shows 2x/3x portion multiplier buttons.
 
 **Settings Modal:**
 - User data section (age, gender, weight, height, activity, goal)

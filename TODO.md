@@ -1,13 +1,13 @@
 # TODO
 
 ## Připravené úkoly
-- nová feature: v detaily jídla (otevřeného z historie nebo oblíbených) budou tlačítka 2x 3x, 
-    - bude to sloužit k tomu, že když se přidává třeba proten, mám v obléíbených zadánu jen jednu dávku 30g ale dávám si třeba 2 nebo 3. přepočítají se i makroživiny. 
+
 
 ## V řešení
 
 
 ## Dokončeno
+- Tlačítka 2x/3x pro násobení porce v detailu jídla (z historie/oblíbených) - přepočet kalorií i maker
 - Ochrana proti dvojkliku na tlačítko Uložit (disable + wait kurzor)
 - Týdenní přehled: dynamická výška sloupců podle kalorií + progresivní barevná paleta (bílá→modrá→zelená→žlutá→oranžová→červená)
 - Přidání/použití jídla z minulého dne do dnešního (tlačítko kopírování v detailu jídla + toast notifikace)
