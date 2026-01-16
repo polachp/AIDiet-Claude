@@ -306,6 +306,22 @@ function updateProviderCapabilities(capabilities) {
 // USER DATA MANAGEMENT
 // =====================================
 
+// BMR coefficients (Oxford/Henry equation - 2005) - same as firestore-service.js
+const BMR_COEFFICIENTS_PREVIEW = {
+    male: {
+        30: [16.0, 545],   // age < 30
+        60: [14.2, 593],   // age 30-59
+        70: [13.0, 567],   // age 60-69
+        Infinity: [13.7, 481]  // age 70+
+    },
+    female: {
+        30: [13.1, 558],   // age < 30
+        60: [9.74, 694],   // age 30-59
+        70: [10.2, 572],   // age 60-69
+        Infinity: [10.0, 577]  // age 70+
+    }
+};
+
 // Goal percentages for TDEE preview calculation
 const GOAL_PERCENTAGES_PREVIEW = {
     'loss-aggressive': 0.80,
@@ -313,6 +329,26 @@ const GOAL_PERCENTAGES_PREVIEW = {
     'loss-mild': 0.90,
     'maintain': 1.0
 };
+
+/**
+ * Calculate BMR using Oxford/Henry equation (same as firestore-service.js)
+ */
+function calculateBMRPreview(gender, age, weight) {
+    const coefficients = BMR_COEFFICIENTS_PREVIEW[gender] || BMR_COEFFICIENTS_PREVIEW.female;
+    const ageBrackets = Object.keys(coefficients).map(Number).sort((a, b) => a - b);
+
+    for (const bracket of ageBrackets) {
+        if (age < bracket) {
+            const [multiplier, constant] = coefficients[bracket];
+            return multiplier * weight + constant;
+        }
+    }
+
+    // Fallback to last bracket
+    const lastBracket = ageBrackets[ageBrackets.length - 1];
+    const [multiplier, constant] = coefficients[lastBracket];
+    return multiplier * weight + constant;
+}
 
 /**
  * Calculate and update TDEE preview in settings
@@ -324,27 +360,25 @@ function updateTdeePreview() {
     const age = parseInt(document.getElementById('userAge').value);
     const gender = document.getElementById('userGender').value;
     const weight = parseFloat(document.getElementById('userWeight').value);
-    const height = parseInt(document.getElementById('userHeight').value);
     const activity = parseFloat(document.getElementById('userActivity').value);
     const goal = document.getElementById('userGoal').value;
 
     // Need all values to calculate
-    if (!age || !weight || !height || !activity) {
+    if (!age || !weight || !activity) {
         preview.innerHTML = '';
         return;
     }
 
-    // BMR calculation (Mifflin-St Jeor)
-    let bmr;
-    if (gender === 'male') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
-
-    const tdee = Math.round(bmr * activity);
+    // BMR calculation (Oxford/Henry equation - same as firestore-service.js)
+    const bmrRaw = calculateBMRPreview(gender, age, weight);
+    const tdeeRaw = bmrRaw * activity;
     const goalPercent = GOAL_PERCENTAGES_PREVIEW[goal] || 1.0;
-    const targetCalories = Math.round(tdee * goalPercent);
+    const targetRaw = tdeeRaw * goalPercent;
+
+    // Round to tens for display
+    const bmr = Math.round(bmrRaw / 10) * 10;
+    const tdee = Math.round(tdeeRaw / 10) * 10;
+    const targetCalories = Math.round(targetRaw / 10) * 10;
     const deficit = targetCalories - tdee;
 
     let deficitHtml = '';
@@ -362,7 +396,7 @@ function updateTdeePreview() {
     preview.innerHTML = `
         <div class="tdee-preview-row">
             <span class="tdee-preview-label">BMR (bazální metabolismus)</span>
-            <span class="tdee-preview-value">${Math.round(bmr)} kcal</span>
+            <span class="tdee-preview-value">${bmr} kcal</span>
         </div>
         <div class="tdee-preview-row">
             <span class="tdee-preview-label">TDEE (udržovací)</span>
@@ -383,11 +417,10 @@ async function saveUserData() {
     const age = parseInt(document.getElementById('userAge').value);
     const gender = document.getElementById('userGender').value;
     const weight = parseFloat(document.getElementById('userWeight').value);
-    const height = parseInt(document.getElementById('userHeight').value);
     const activity = parseFloat(document.getElementById('userActivity').value);
     const goal = document.getElementById('userGoal').value;
 
-    if (!age || !weight || !height) {
+    if (!age || !weight) {
         alert('Vyplňte prosím všechny údaje');
         return;
     }
@@ -398,7 +431,7 @@ async function saveUserData() {
     }
 
     try {
-        const profileData = { age, gender, weight, height, activity, goal };
+        const profileData = { age, gender, weight, activity, goal };
         const calculatedGoals = await saveUserProfile(AppState.currentUser.uid, profileData);
 
         AppState.userData = profileData;
@@ -435,7 +468,6 @@ async function loadUserDataFromFirestore() {
                 age: profile.age,
                 gender: profile.gender,
                 weight: profile.weight,
-                height: profile.height,
                 activity: profile.activity,
                 goal: profile.goal || 'maintain'
             };
@@ -449,7 +481,6 @@ async function loadUserDataFromFirestore() {
             document.getElementById('userAge').value = AppState.userData.age;
             document.getElementById('userGender').value = AppState.userData.gender;
             document.getElementById('userWeight').value = AppState.userData.weight;
-            document.getElementById('userHeight').value = AppState.userData.height;
             document.getElementById('userActivity').value = AppState.userData.activity;
             document.getElementById('userGoal').value = AppState.userData.goal;
 
