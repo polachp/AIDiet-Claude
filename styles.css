@@ -1748,6 +1748,44 @@ button:disabled.saving {
     margin-top: var(--space-lg);
 }
 
+/* Meal Edit Modal - Portion Multiplier */
+.form-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+
+.form-group-header label {
+    margin-bottom: 0;
+}
+
+.portion-multiplier-btns {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+.btn-portion {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-portion:hover {
+    background: var(--accent);
+    color: var(--bg-dark);
+}
+
+.btn-portion:active {
+    transform: scale(0.95);
+}
+
 /* Meal Edit Modal */
 .meal-edit-macros {
     display: flex;

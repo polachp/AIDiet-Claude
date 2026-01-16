@@ -303,7 +303,13 @@
                     <input type="hidden" id="editMealMode">
 
                     <div class="form-group">
-                        <label for="editMealName">Název jídla:</label>
+                        <div class="form-group-header">
+                            <label for="editMealName">Název jídla:</label>
+                            <div id="portionMultiplierBtns" class="portion-multiplier-btns" style="display: none;">
+                                <button type="button" class="btn-portion" onclick="multiplyPortion(2)">2x</button>
+                                <button type="button" class="btn-portion" onclick="multiplyPortion(3)">3x</button>
+                            </div>
+                        </div>
                         <input type="text" id="editMealName" placeholder="Např. Kuřecí řízek s rýží">
                     </div>
 

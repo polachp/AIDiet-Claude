@@ -1847,6 +1847,7 @@ async function openMealEditModal(mode, meal) {
     const favoriteBtn = document.getElementById('mealFavoriteBtn');
     const removeFavoriteBtn = document.getElementById('removeFavoriteBtn');
     const copyToTodayBtn = document.getElementById('copyToTodayBtn');
+    const portionBtns = document.getElementById('portionMultiplierBtns');
 
     // Store favoriteId if opening from favorites list
     currentModalFavoriteId = meal.favoriteId || null;
@@ -1909,6 +1910,9 @@ async function openMealEditModal(mode, meal) {
         // Check favorite status
         await checkMealFavoriteStatus(meal.name);
     }
+
+    // Show portion multiplier buttons for history/favorites items (manual mode = from quick-add list)
+    portionBtns.style.display = mode === 'manual' ? 'flex' : 'none';
 
     // Show modal
     modal.classList.add('active');
@@ -2009,6 +2013,32 @@ function closeMealEditModal(deleteMeal = false) {
     saveBtn.classList.remove('saving');
 
     modal.classList.remove('active');
+}
+
+/**
+ * Multiply portion by a factor (2x, 3x)
+ * Recalculates calories and all macros
+ */
+function multiplyPortion(factor) {
+    const caloriesInput = document.getElementById('editMealCalories');
+    const proteinInput = document.getElementById('editMealProtein');
+    const carbsInput = document.getElementById('editMealCarbs');
+    const fatInput = document.getElementById('editMealFat');
+
+    // Multiply all values
+    const newCalories = Math.round((parseInt(caloriesInput.value) || 0) * factor);
+    const newProtein = Math.round((parseInt(proteinInput.value) || 0) * factor);
+    const newCarbs = Math.round((parseInt(carbsInput.value) || 0) * factor);
+    const newFat = Math.round((parseInt(fatInput.value) || 0) * factor);
+
+    // Update values
+    caloriesInput.value = newCalories;
+    proteinInput.value = newProtein;
+    carbsInput.value = newCarbs;
+    fatInput.value = newFat;
+
+    // Re-setup slider with new calorie value
+    setupCaloriesSlider(newCalories);
 }
 
 /**
