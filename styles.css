@@ -2400,6 +2400,8 @@ button:disabled.saving {
     max-height: calc(100vh - 24px);
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     margin-top: 24px;
+    display: flex;
+    flex-direction: column;
 }
 
 #foodHistoryModal .modal-body {
@@ -2411,7 +2413,10 @@ button:disabled.saving {
 }
 
 #foodHistoryModal .food-list {
-    margin-bottom: 12px;
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: env(safe-area-inset-bottom, 16px);
+    padding-bottom: var(--space-md);
     scrollbar-width: thin;
     scrollbar-color: var(--text-muted) transparent;
 }
