@@ -1210,10 +1210,16 @@ function updateSummary() {
             goalMarker.style.right = 'auto';
         }
 
-        // Color coding - iOS Style based on percentage relative to goal
-        progressFill.style.background = getProgressColor(caloriesPercent);
+        // Color coding - progressive based on goal and TDEE
+        progressFill.style.background = getProgressColor(caloriesPercent, totals.calories);
         caloriesPercentageEl.style.color = '#FFFFFF';
         caloriesPercentageEl.style.fontWeight = caloriesPercent >= 95 ? '700' : '600';
+
+        // Update calories box background gradient based on state
+        const caloriesBox = document.querySelector('.calories-main');
+        if (caloriesBox) {
+            caloriesBox.style.background = getCaloriesBoxGradient(totals.calories);
+        }
 
         // Update BMR/TDEE meta info
         const caloriesMeta = document.getElementById('caloriesMeta');
@@ -1245,13 +1251,11 @@ function updateSummary() {
     }
 }
 
-// Progressive calorie intake colors - simplified traffic light
-// Green = OK zone (up to 110%), Orange = warning (110-120%), Red = over (120%+)
-const PROGRESS_COLORS = {
-    low: '#4CAF50',      // 0-69% - Zelená (málo)
-    good: '#4CAF50',     // 70-110% - Zelená (OK zóna)
-    warning: '#FF9800',  // 110-120% - Oranžová (varování)
-    over: '#F44336'      // 120%+ - Červená (přes)
+// Base colors for progressive gradient
+const COLORS = {
+    green: { r: 76, g: 175, b: 80 },    // #4CAF50
+    orange: { r: 255, g: 152, b: 0 },   // #FF9800
+    red: { r: 244, g: 67, b: 54 }       // #F44336
 };
 
 // Macro-specific colors for normal range
@@ -1262,30 +1266,153 @@ const MACRO_COLORS = {
 };
 
 /**
- * Get progress bar color based on percentage - simplified traffic light
- * @param {number} percent - Percentage value
- * @returns {string} Color value
+ * Interpolate between two colors
+ * @param {Object} color1 - Start color {r, g, b}
+ * @param {Object} color2 - End color {r, g, b}
+ * @param {number} factor - 0-1 interpolation factor
+ * @returns {string} RGB color string
  */
-function getProgressColor(percent) {
-    if (percent >= 120) return PROGRESS_COLORS.over;      // Červená - hodně přes
-    if (percent >= 110) return PROGRESS_COLORS.warning;   // Oranžová - lehce přes
-    return PROGRESS_COLORS.good;                          // Zelená - OK zóna
+function interpolateColor(color1, color2, factor) {
+    const r = Math.round(color1.r + (color2.r - color1.r) * factor);
+    const g = Math.round(color1.g + (color2.g - color1.g) * factor);
+    const b = Math.round(color1.b + (color2.b - color1.b) * factor);
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
 /**
- * Get percentage style based on value - simplified traffic light
+ * Get progress bar color based on calories relative to goal and TDEE
+ * - Under goal: green
+ * - Between goal and TDEE: green → orange gradient
+ * - Above TDEE: orange → red gradient
+ * @param {number} percent - Percentage of goal
+ * @param {number} calories - Actual calories (optional, for TDEE comparison)
+ * @returns {string} Color value
+ */
+function getProgressColor(percent, calories = null) {
+    const goals = AppState.dailyGoals;
+
+    // Fallback if no goals set - use simple thresholds
+    if (!goals || !goals.tdee || !calories) {
+        if (percent >= 120) return interpolateColor(COLORS.orange, COLORS.red, 1);
+        if (percent >= 100) return interpolateColor(COLORS.green, COLORS.orange, (percent - 100) / 20);
+        return interpolateColor(COLORS.green, COLORS.green, 0);
+    }
+
+    const goalCalories = goals.calories;
+    const tdeeCalories = goals.tdee;
+    const rangeToTdee = tdeeCalories - goalCalories;
+
+    // Transition point: 70% of the way from goal to TDEE
+    const orangePoint = goalCalories + (rangeToTdee * 0.7);
+
+    // Under goal - solid green
+    if (calories <= goalCalories) {
+        return interpolateColor(COLORS.green, COLORS.green, 0);
+    }
+
+    // Goal to 70% of TDEE range - green to orange gradient
+    if (calories <= orangePoint) {
+        const factor = (calories - goalCalories) / (orangePoint - goalCalories);
+        return interpolateColor(COLORS.green, COLORS.orange, factor);
+    }
+
+    // 70% to TDEE - orange to red gradient
+    if (calories <= tdeeCalories) {
+        const factor = (calories - orangePoint) / (tdeeCalories - orangePoint);
+        return interpolateColor(COLORS.orange, COLORS.red, factor);
+    }
+
+    // Above TDEE - solid red
+    return interpolateColor(COLORS.red, COLORS.red, 0);
+}
+
+/**
+ * Get background gradient for calories box based on state
+ * Returns a gradient that transitions from green → orange → red
+ * @param {number} calories - Actual calories
+ * @returns {string} CSS gradient
+ */
+function getCaloriesBoxGradient(calories) {
+    const goals = AppState.dailyGoals;
+
+    // Default green gradient
+    const greenGradient = 'linear-gradient(135deg, #1A5F4A 0%, #2E8B7A 50%, #4BA3E3 100%)';
+    const orangeGradient = 'linear-gradient(135deg, #5F4A1A 0%, #8B6B2E 50%, #E3A34B 100%)';
+    const redGradient = 'linear-gradient(135deg, #5F1A1A 0%, #8B2E2E 50%, #E34B4B 100%)';
+
+    if (!goals || !goals.tdee || !calories) {
+        return greenGradient;
+    }
+
+    const goalCalories = goals.calories;
+    const tdeeCalories = goals.tdee;
+    const rangeToTdee = tdeeCalories - goalCalories;
+    const orangePoint = goalCalories + (rangeToTdee * 0.7);
+
+    // Under goal - green
+    if (calories <= goalCalories) {
+        return greenGradient;
+    }
+
+    // Goal to 70% - transition green to orange
+    if (calories <= orangePoint) {
+        const factor = (calories - goalCalories) / (orangePoint - goalCalories);
+        // Interpolate between green and orange gradients
+        const g1 = { r1: 26, g1: 95, b1: 74, r2: 46, g2: 139, b2: 122, r3: 75, g3: 163, b3: 227 };
+        const g2 = { r1: 95, g1: 74, b1: 26, r2: 139, g2: 107, b2: 46, r3: 227, g3: 163, b3: 75 };
+
+        const r1 = Math.round(g1.r1 + (g2.r1 - g1.r1) * factor);
+        const g1c = Math.round(g1.g1 + (g2.g1 - g1.g1) * factor);
+        const b1 = Math.round(g1.b1 + (g2.b1 - g1.b1) * factor);
+        const r2 = Math.round(g1.r2 + (g2.r2 - g1.r2) * factor);
+        const g2c = Math.round(g1.g2 + (g2.g2 - g1.g2) * factor);
+        const b2 = Math.round(g1.b2 + (g2.b2 - g1.b2) * factor);
+        const r3 = Math.round(g1.r3 + (g2.r3 - g1.r3) * factor);
+        const g3c = Math.round(g1.g3 + (g2.g3 - g1.g3) * factor);
+        const b3 = Math.round(g1.b3 + (g2.b3 - g1.b3) * factor);
+
+        return `linear-gradient(135deg, rgb(${r1},${g1c},${b1}) 0%, rgb(${r2},${g2c},${b2}) 50%, rgb(${r3},${g3c},${b3}) 100%)`;
+    }
+
+    // 70% to TDEE - transition orange to red
+    if (calories <= tdeeCalories) {
+        const factor = (calories - orangePoint) / (tdeeCalories - orangePoint);
+        const g1 = { r1: 95, g1: 74, b1: 26, r2: 139, g2: 107, b2: 46, r3: 227, g3: 163, b3: 75 };
+        const g2 = { r1: 95, g1: 26, b1: 26, r2: 139, g2: 46, b2: 46, r3: 227, g3: 75, b3: 75 };
+
+        const r1 = Math.round(g1.r1 + (g2.r1 - g1.r1) * factor);
+        const g1c = Math.round(g1.g1 + (g2.g1 - g1.g1) * factor);
+        const b1 = Math.round(g1.b1 + (g2.b1 - g1.b1) * factor);
+        const r2 = Math.round(g1.r2 + (g2.r2 - g1.r2) * factor);
+        const g2c = Math.round(g1.g2 + (g2.g2 - g1.g2) * factor);
+        const b2 = Math.round(g1.b2 + (g2.b2 - g1.b2) * factor);
+        const r3 = Math.round(g1.r3 + (g2.r3 - g1.r3) * factor);
+        const g3c = Math.round(g1.g3 + (g2.g3 - g1.g3) * factor);
+        const b3 = Math.round(g1.b3 + (g2.b3 - g1.b3) * factor);
+
+        return `linear-gradient(135deg, rgb(${r1},${g1c},${b1}) 0%, rgb(${r2},${g2c},${b2}) 50%, rgb(${r3},${g3c},${b3}) 100%)`;
+    }
+
+    // Above TDEE - red
+    return redGradient;
+}
+
+/**
+ * Get percentage style based on value
  * @param {number} percent - Percentage value
  * @param {string} type - Macro type for default color
  * @returns {Object} Style object with color and fontWeight
  */
 function getPercentageStyle(percent, type) {
+    // For macros, use simple thresholds (no TDEE concept)
     if (percent >= 120) {
-        return { color: PROGRESS_COLORS.over, fontWeight: '700' };
+        return { color: interpolateColor(COLORS.orange, COLORS.red, 1), fontWeight: '700' };
     }
-    if (percent >= 110) {
-        return { color: PROGRESS_COLORS.warning, fontWeight: '700' };
+    if (percent >= 100) {
+        const factor = (percent - 100) / 20;
+        return { color: interpolateColor(COLORS.green, COLORS.orange, factor), fontWeight: '700' };
     }
-    // OK zone (up to 110%) - use macro-specific color
+    // Under goal - use macro-specific color
     return { color: MACRO_COLORS[type] || 'var(--text-primary)', fontWeight: '700' };
 }
 
@@ -1346,8 +1473,8 @@ async function updateWeeklyTrend() {
             // Max visual height is 100% (reached at 125% of goal)
             const barHeight = Math.min(Math.round(percent * 0.8), 100);
 
-            // Get bar color using same logic as daily summary
-            const barColor = dayData.totalCalories > 0 ? getProgressColor(percent) : 'rgba(255, 255, 255, 0.08)';
+            // Get bar color using progressive gradient based on goal and TDEE
+            const barColor = dayData.totalCalories > 0 ? getProgressColor(percent, dayData.totalCalories) : 'rgba(255, 255, 255, 0.08)';
 
             const selectedDateString = getSelectedDateString();
             const isSelected = dayData.date === selectedDateString;
