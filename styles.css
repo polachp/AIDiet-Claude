@@ -1201,22 +1201,25 @@ button:disabled.saving {
 }
 
 .macros-grid {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-sm);
 }
 
 .macro-box {
     border-radius: var(--radius-lg);
-    padding: var(--space-md) var(--space-lg);
+    padding: var(--space-md);
     position: relative;
     overflow: hidden;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    text-align: center;
     box-shadow: var(--shadow-sm);
     transition: transform var(--transition-fast);
-    min-height: 56px;
+    min-height: auto;
+    gap: var(--space-xs);
 }
 
 .macro-box:active {
@@ -1249,28 +1252,28 @@ button:disabled.saving {
 .macro-box-left {
     display: flex;
     align-items: center;
-    gap: var(--space-md);
+    justify-content: center;
 }
 
 .macro-box-icon {
-    font-size: 20px;
+    font-size: 28px;
     opacity: 0.9;
 }
 
+/* Hide label by default - compact mode */
 .macro-box-label {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 600;
+    display: none;
 }
 
 .macro-box-right {
     display: flex;
-    align-items: baseline;
-    gap: var(--space-sm);
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
 }
 
 .macro-box-percent {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1;
@@ -1278,18 +1281,12 @@ button:disabled.saving {
 }
 
 .macro-box-value {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.7);
 }
 
 .macro-box-goal {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-/* Hide goal text in compact mode */
-.macro-box .macro-box-goal {
     display: none;
 }
 
@@ -2765,24 +2762,6 @@ button:disabled.saving {
 
     .calories-secondary {
         font-size: 14px;
-    }
-
-    .macros-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-sm);
-    }
-
-    .macro-box {
-        min-height: 120px;
-        padding: var(--space-lg);
-    }
-
-    .macro-box[data-macro="fat"] {
-        grid-column: span 2;
-    }
-
-    .macro-box-percent {
-        font-size: 28px;
     }
 
     .date-navigator {
