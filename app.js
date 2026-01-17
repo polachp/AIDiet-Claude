@@ -1245,16 +1245,13 @@ function updateSummary() {
     }
 }
 
-// Progressive calorie intake colors (intuitive traffic light progression)
-// Designed for dark UI - colors are vibrant but not harsh
+// Progressive calorie intake colors - simplified traffic light
+// Green = OK zone (up to 110%), Orange = warning (110-120%), Red = over (120%+)
 const PROGRESS_COLORS = {
-    minimal: 'rgba(255, 255, 255, 0.7)',  // 0-39% - Bílá/šedá - klidně, začínáš
-    low: '#64B5F6',                        // 40-59% - Světle modrá - pohoda
-    moderate: '#4CAF50',                   // 60-79% - Zelená - dobrý progress
-    good: '#8BC34A',                       // 80-94% - Světle zelená - blížíš se
-    warning: '#FFB300',                    // 95-104% - Žlutá/Amber - u hranice
-    caution: '#FF9800',                    // 105-114% - Oranžová - lehce přes
-    over: '#F44336'                        // 115%+ - Červená - hodně přes
+    low: '#4CAF50',      // 0-69% - Zelená (málo)
+    good: '#4CAF50',     // 70-110% - Zelená (OK zóna)
+    warning: '#FF9800',  // 110-120% - Oranžová (varování)
+    over: '#F44336'      // 120%+ - Červená (přes)
 };
 
 // Macro-specific colors for normal range
@@ -1265,37 +1262,30 @@ const MACRO_COLORS = {
 };
 
 /**
- * Get progress bar color based on percentage - progressive palette
+ * Get progress bar color based on percentage - simplified traffic light
  * @param {number} percent - Percentage value
  * @returns {string} Color value
  */
 function getProgressColor(percent) {
-    if (percent >= 115) return PROGRESS_COLORS.over;      // Červená - hodně přes
-    if (percent >= 105) return PROGRESS_COLORS.caution;   // Oranžová - lehce přes
-    if (percent >= 95) return PROGRESS_COLORS.warning;    // Žlutá - u hranice
-    if (percent >= 80) return PROGRESS_COLORS.good;       // Světle zelená - blížíš se
-    if (percent >= 60) return PROGRESS_COLORS.moderate;   // Zelená - dobrý
-    if (percent >= 40) return PROGRESS_COLORS.low;        // Modrá - pohoda
-    return PROGRESS_COLORS.minimal;                       // Bílá - začínáš
+    if (percent >= 120) return PROGRESS_COLORS.over;      // Červená - hodně přes
+    if (percent >= 110) return PROGRESS_COLORS.warning;   // Oranžová - lehce přes
+    return PROGRESS_COLORS.good;                          // Zelená - OK zóna
 }
 
 /**
- * Get percentage style based on value
+ * Get percentage style based on value - simplified traffic light
  * @param {number} percent - Percentage value
  * @param {string} type - Macro type for default color
  * @returns {Object} Style object with color and fontWeight
  */
 function getPercentageStyle(percent, type) {
-    if (percent >= 110) {
+    if (percent >= 120) {
         return { color: PROGRESS_COLORS.over, fontWeight: '700' };
     }
-    if (percent >= 95) {
-        return { color: PROGRESS_COLORS.atGoal, fontWeight: '700' };
+    if (percent >= 110) {
+        return { color: PROGRESS_COLORS.warning, fontWeight: '700' };
     }
-    if (percent >= 80) {
-        return { color: PROGRESS_COLORS.good, fontWeight: '600' };
-    }
-    // Normal range - use macro-specific color
+    // OK zone (up to 110%) - use macro-specific color
     return { color: MACRO_COLORS[type] || 'var(--text-primary)', fontWeight: '700' };
 }
 
@@ -1341,15 +1331,6 @@ async function updateWeeklyTrend() {
         // Fetch weekly summaries (optimized - uses dailySummaries with lazy migration)
         const weeklyData = await getWeeklySummaries(AppState.currentUser.uid);
 
-        // Find max calories for scaling
-        const maxCalories = Math.max(
-            ...weeklyData.map(day => day.totalCalories),
-            AppState.dailyGoals.calories
-        );
-
-        // Calculate goal line position (100% = goal)
-        const goalLinePosition = (AppState.dailyGoals.calories / maxCalories) * 100;
-
         // Build HTML for chart
         let chartHTML = '<div class="weekly-trend-bars">';
 
@@ -1361,8 +1342,9 @@ async function updateWeeklyTrend() {
             const caloriesGoal = AppState.dailyGoals.calories;
             const percent = caloriesGoal > 0 ? Math.round((dayData.totalCalories / caloriesGoal) * 100) : 0;
 
-            // Calculate bar height - based on goal percentage, capped at 100%
-            const barHeight = Math.min(percent, 100);
+            // Calculate bar height - 100% goal = 80% visual height, allows overflow display
+            // Max visual height is 100% (reached at 125% of goal)
+            const barHeight = Math.min(Math.round(percent * 0.8), 100);
 
             // Get bar color using same logic as daily summary
             const barColor = dayData.totalCalories > 0 ? getProgressColor(percent) : 'rgba(255, 255, 255, 0.08)';
@@ -1389,7 +1371,6 @@ async function updateWeeklyTrend() {
         });
 
         chartHTML += '</div>';
-        chartHTML += `<div class="trend-goal-line" style="bottom: ${goalLinePosition}%"></div>`;
 
         chartContainer.innerHTML = chartHTML;
 
