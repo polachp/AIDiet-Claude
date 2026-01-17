@@ -194,13 +194,20 @@ OR clearAppData() on logout
 - User data section (age, gender, weight, height, activity, goal)
 - AI Provider selection with capability indicators (📝 Text, 📷 Images, 🎤 Audio)
 
-**Weekly Trend Chart:** Interactive SVG chart. Click on day to navigate to that date.
+**Weekly Trend Chart:** Interactive SVG chart. Click on day to navigate to that date. Bar height reflects percentage of goal (100% goal = 80% visual height).
+
+**Dynamic Color System:** Progress bars and calories box use progressive color gradients based on goal and TDEE:
+- Under goal (TDEE - deficit): Green
+- Goal → 70% to TDEE: Green → Orange gradient
+- 70% → TDEE: Orange → Red gradient
+- Above TDEE: Red
+Functions: `getProgressColor(percent, calories)`, `getCaloriesBoxGradient(calories)`
 
 **Date Navigation:** `selectedDate` state controls which day's meals are shown. Navigate with arrows or click on weekly trend.
 
 **Food History & Favorites:** Quick-add modal with tabs for recent foods and favorites. Star icon in meal edit modal toggles favorite status.
 
-**Circular Progress:** SVG `stroke-dashoffset` animation for macro nutrients.
+**Macro Boxes:** Compact 3-column grid with large icons (28px), no text labels. Shows percentage and grams.
 
 **Confirm Dialog:** Use `showConfirmDialog(title, message, icon)` instead of native `confirm()`. Returns `Promise<boolean>`. Maintains consistent UI style.
 
