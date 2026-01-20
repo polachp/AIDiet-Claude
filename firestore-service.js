@@ -211,11 +211,11 @@ function calculateBMR(gender, age, weight) {
 
 /**
  * Calculate daily goals from profile data
- * @param {Object} profile - {age, gender, weight, height, activity, goal}
+ * @param {Object} profile - {age, gender, weight, height, activity, goal, proteinPerKg}
  * @returns {Object} Daily goals {calories, protein, carbs, fat, tdee, bmr, deficit}
  */
 function calculateDailyGoalsFromProfile(profile) {
-    const { age, gender, weight, activity, goal = 'maintain' } = profile;
+    const { age, gender, weight, activity, goal = 'maintain', proteinPerKg = 2.0 } = profile;
 
     // BMR calculation (Oxford/Henry equation - 2005)
     const bmr = calculateBMR(gender, age, weight);
@@ -230,14 +230,18 @@ function calculateDailyGoalsFromProfile(profile) {
     const targetCalories = Math.round(tdee * tdeePercentage);
     const calorieAdjustment = targetCalories - tdee; // For display purposes
 
-    // Macro distribution (30% protein, 40% carbs, 30% fat)
-    const proteinCalories = targetCalories * 0.30;
-    const carbsCalories = targetCalories * 0.40;
-    const fatCalories = targetCalories * 0.30;
+    // Protein: based on g/kg body weight (user configurable, default 2.0)
+    const proteinGrams = Math.round(weight * proteinPerKg);
+    const proteinCalories = proteinGrams * 4;
+
+    // Remaining calories split between carbs (55%) and fat (45%)
+    const remainingCalories = targetCalories - proteinCalories;
+    const carbsCalories = remainingCalories * 0.55;
+    const fatCalories = remainingCalories * 0.45;
 
     return {
         calories: targetCalories,
-        protein: Math.round(proteinCalories / 4), // 4 kcal per gram
+        protein: proteinGrams,                    // Based on g/kg
         carbs: Math.round(carbsCalories / 4),     // 4 kcal per gram
         fat: Math.round(fatCalories / 9),         // 9 kcal per gram
         tdee: tdee,                               // Maintenance calories

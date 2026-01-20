@@ -362,6 +362,7 @@ function updateTdeePreview() {
     const weight = parseFloat(document.getElementById('userWeight').value);
     const activity = parseFloat(document.getElementById('userActivity').value);
     const goal = document.getElementById('userGoal').value;
+    const proteinPerKg = parseFloat(document.getElementById('userProteinPerKg').value) || 2.0;
 
     // Need all values to calculate
     if (!age || !weight || !activity) {
@@ -380,6 +381,9 @@ function updateTdeePreview() {
     const tdee = Math.round(tdeeRaw / 10) * 10;
     const targetCalories = Math.round(targetRaw / 10) * 10;
     const deficit = targetCalories - tdee;
+
+    // Calculate protein target
+    const proteinTarget = Math.round(weight * proteinPerKg);
 
     let deficitHtml = '';
     if (deficit !== 0) {
@@ -407,6 +411,10 @@ function updateTdeePreview() {
             <span class="tdee-preview-label">Denní cíl</span>
             <span class="tdee-preview-value highlight">${targetCalories} kcal</span>
         </div>
+        <div class="tdee-preview-row">
+            <span class="tdee-preview-label">Cíl proteinů (${proteinPerKg} g/kg)</span>
+            <span class="tdee-preview-value">${proteinTarget} g</span>
+        </div>
     `;
 }
 
@@ -419,6 +427,7 @@ async function saveUserData() {
     const weight = parseFloat(document.getElementById('userWeight').value);
     const activity = parseFloat(document.getElementById('userActivity').value);
     const goal = document.getElementById('userGoal').value;
+    const proteinPerKg = parseFloat(document.getElementById('userProteinPerKg').value) || 2.0;
 
     if (!age || !weight) {
         alert('Vyplňte prosím všechny údaje');
@@ -431,7 +440,7 @@ async function saveUserData() {
     }
 
     try {
-        const profileData = { age, gender, weight, activity, goal };
+        const profileData = { age, gender, weight, activity, goal, proteinPerKg };
         const calculatedGoals = await saveUserProfile(AppState.currentUser.uid, profileData);
 
         AppState.userData = profileData;
@@ -469,7 +478,8 @@ async function loadUserDataFromFirestore() {
                 gender: profile.gender,
                 weight: profile.weight,
                 activity: profile.activity,
-                goal: profile.goal || 'maintain'
+                goal: profile.goal || 'maintain',
+                proteinPerKg: profile.proteinPerKg || 2.0
             };
 
             AppState.dailyGoals = profile.dailyGoals;
@@ -483,6 +493,7 @@ async function loadUserDataFromFirestore() {
             document.getElementById('userWeight').value = AppState.userData.weight;
             document.getElementById('userActivity').value = AppState.userData.activity;
             document.getElementById('userGoal').value = AppState.userData.goal;
+            document.getElementById('userProteinPerKg').value = AppState.userData.proteinPerKg;
 
             // Update TDEE preview
             updateTdeePreview();
