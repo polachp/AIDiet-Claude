@@ -136,7 +136,7 @@
                         <div class="user-data-grid">
                             <div class="form-group">
                                 <label for="userAge">Věk (roky):</label>
-                                <input type="number" id="userAge" placeholder="25" min="10" max="120" oninput="updateTdeePreview()">
+                                <input type="text" inputmode="numeric" id="userAge" placeholder="25" oninput="updateTdeePreview()">
                             </div>
                             <div class="form-group">
                                 <label for="userGender">Pohlaví:</label>
@@ -147,7 +147,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="userWeight">Váha (kg):</label>
-                                <input type="number" id="userWeight" placeholder="70" min="30" max="300" step="0.1" oninput="updateTdeePreview()">
+                                <input type="text" inputmode="decimal" id="userWeight" placeholder="70" oninput="updateTdeePreview()">
                             </div>
                             <div class="form-group">
                                 <label for="userActivity">Aktivita:</label>
@@ -170,7 +170,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="userProteinPerKg">Cíl proteinů (g/kg):</label>
-                                <input type="number" id="userProteinPerKg" placeholder="2.0" min="0.8" max="4.0" step="0.1" value="2.0" oninput="updateTdeePreview()">
+                                <input type="text" inputmode="decimal" id="userProteinPerKg" placeholder="2,0" value="2.0" oninput="updateTdeePreview()">
                             </div>
                             <div id="tdeePreview" class="tdee-preview"></div>
                         </div>
@@ -320,14 +320,14 @@
                     <div class="form-group calories-group">
                         <label for="editMealCalories">Kalorie (kcal):</label>
                         <input type="range" id="editMealCaloriesSlider" min="0" max="500" value="250" class="calories-slider">
-                        <input type="number" id="editMealCalories" placeholder="500" min="0" max="5000">
+                        <input type="text" inputmode="numeric" id="editMealCalories" placeholder="500">
                     </div>
 
                     <div class="meal-edit-macros">
                         <div class="macro-input">
                             <span class="macro-icon">🥩</span>
                             <div class="macro-value">
-                                <input type="number" id="editMealProtein" placeholder="0" min="0" max="500" step="1">
+                                <input type="text" inputmode="decimal" id="editMealProtein" placeholder="0">
                                 <span class="macro-unit">g</span>
                             </div>
                             <span class="macro-label">Bílkoviny</span>
@@ -335,7 +335,7 @@
                         <div class="macro-input">
                             <span class="macro-icon">🌾</span>
                             <div class="macro-value">
-                                <input type="number" id="editMealCarbs" placeholder="0" min="0" max="500" step="1">
+                                <input type="text" inputmode="decimal" id="editMealCarbs" placeholder="0">
                                 <span class="macro-unit">g</span>
                             </div>
                             <span class="macro-label">Sacharidy</span>
@@ -343,7 +343,7 @@
                         <div class="macro-input">
                             <span class="macro-icon">🥑</span>
                             <div class="macro-value">
-                                <input type="number" id="editMealFat" placeholder="0" min="0" max="500" step="1">
+                                <input type="text" inputmode="decimal" id="editMealFat" placeholder="0">
                                 <span class="macro-unit">g</span>
                             </div>
                             <span class="macro-label">Tuky</span>

@@ -3,6 +3,34 @@
 // =====================================
 
 // =====================================
+// UTILITY FUNCTIONS
+// =====================================
+
+/**
+ * Parse number from input - supports both comma and dot as decimal separator
+ * @param {string|number} value - Input value
+ * @returns {number} Parsed number or NaN
+ */
+function parseNumber(value) {
+    if (typeof value === 'number') return value;
+    if (!value) return NaN;
+    // Replace comma with dot for parsing
+    return parseFloat(String(value).replace(',', '.'));
+}
+
+/**
+ * Parse integer from input - supports both comma and dot as decimal separator
+ * @param {string|number} value - Input value
+ * @returns {number} Parsed integer or NaN
+ */
+function parseIntNumber(value) {
+    if (typeof value === 'number') return Math.round(value);
+    if (!value) return NaN;
+    // Replace comma with dot for parsing, then round
+    return Math.round(parseFloat(String(value).replace(',', '.')));
+}
+
+// =====================================
 // GLOBAL STATE
 // =====================================
 const AppState = {
@@ -357,12 +385,12 @@ function updateTdeePreview() {
     const preview = document.getElementById('tdeePreview');
     if (!preview) return;
 
-    const age = parseInt(document.getElementById('userAge').value);
+    const age = parseIntNumber(document.getElementById('userAge').value);
     const gender = document.getElementById('userGender').value;
-    const weight = parseFloat(document.getElementById('userWeight').value);
-    const activity = parseFloat(document.getElementById('userActivity').value);
+    const weight = parseNumber(document.getElementById('userWeight').value);
+    const activity = parseNumber(document.getElementById('userActivity').value);
     const goal = document.getElementById('userGoal').value;
-    const proteinPerKg = parseFloat(document.getElementById('userProteinPerKg').value) || 2.0;
+    const proteinPerKg = parseNumber(document.getElementById('userProteinPerKg').value) || 2.0;
 
     // Need all values to calculate
     if (!age || !weight || !activity) {
@@ -422,12 +450,12 @@ function updateTdeePreview() {
  * Save user profile data to Firestore
  */
 async function saveUserData() {
-    const age = parseInt(document.getElementById('userAge').value);
+    const age = parseIntNumber(document.getElementById('userAge').value);
     const gender = document.getElementById('userGender').value;
-    const weight = parseFloat(document.getElementById('userWeight').value);
-    const activity = parseFloat(document.getElementById('userActivity').value);
+    const weight = parseNumber(document.getElementById('userWeight').value);
+    const activity = parseNumber(document.getElementById('userActivity').value);
     const goal = document.getElementById('userGoal').value;
-    const proteinPerKg = parseFloat(document.getElementById('userProteinPerKg').value) || 2.0;
+    const proteinPerKg = parseNumber(document.getElementById('userProteinPerKg').value) || 2.0;
 
     if (!age || !weight) {
         alert('Vyplňte prosím všechny údaje');
@@ -664,10 +692,10 @@ async function copyCurrentMealToToday() {
     // Get current values from form (user might have edited them)
     const mealData = {
         name: document.getElementById('editMealName').value.trim(),
-        calories: parseInt(document.getElementById('editMealCalories').value) || 0,
-        protein: parseFloat(document.getElementById('editMealProtein').value) || 0,
-        carbs: parseFloat(document.getElementById('editMealCarbs').value) || 0,
-        fat: parseFloat(document.getElementById('editMealFat').value) || 0
+        calories: parseIntNumber(document.getElementById('editMealCalories').value) || 0,
+        protein: parseNumber(document.getElementById('editMealProtein').value) || 0,
+        carbs: parseNumber(document.getElementById('editMealCarbs').value) || 0,
+        fat: parseNumber(document.getElementById('editMealFat').value) || 0
     };
 
     // Confirm dialog with green button
@@ -2060,12 +2088,12 @@ function setupCaloriesSlider(calories) {
 
     // Sync input → slider (and adjust range if needed)
     input.oninput = function() {
-        const newVal = parseInt(this.value) || 0;
+        const newVal = parseIntNumber(this.value) || 0;
         // Expand range if value goes outside
-        if (newVal < parseInt(slider.min)) {
+        if (newVal < parseIntNumber(slider.min)) {
             slider.min = Math.max(0, Math.round(newVal * 0.5));
         }
-        if (newVal > parseInt(slider.max)) {
+        if (newVal > parseIntNumber(slider.max)) {
             slider.max = Math.round(newVal * 1.5);
         }
         slider.value = newVal;
@@ -2088,9 +2116,9 @@ function setupMacroInputs() {
 
         if (!proteinPercentEl || !carbsPercentEl || !fatPercentEl) return;
 
-        const protein = parseFloat(proteinInput.value) || 0;
-        const carbs = parseFloat(carbsInput.value) || 0;
-        const fat = parseFloat(fatInput.value) || 0;
+        const protein = parseNumber(proteinInput.value) || 0;
+        const carbs = parseNumber(carbsInput.value) || 0;
+        const fat = parseNumber(fatInput.value) || 0;
 
         // Calculate percentages based on daily goals
         if (AppState.dailyGoals) {
@@ -2145,10 +2173,10 @@ function multiplyPortion(factor) {
     const fatInput = document.getElementById('editMealFat');
 
     // Multiply all values
-    const newCalories = Math.round((parseInt(caloriesInput.value) || 0) * factor);
-    const newProtein = Math.round((parseInt(proteinInput.value) || 0) * factor);
-    const newCarbs = Math.round((parseInt(carbsInput.value) || 0) * factor);
-    const newFat = Math.round((parseInt(fatInput.value) || 0) * factor);
+    const newCalories = Math.round((parseIntNumber(caloriesInput.value) || 0) * factor);
+    const newProtein = Math.round((parseNumber(proteinInput.value) || 0) * factor);
+    const newCarbs = Math.round((parseNumber(carbsInput.value) || 0) * factor);
+    const newFat = Math.round((parseNumber(fatInput.value) || 0) * factor);
 
     // Update values
     caloriesInput.value = newCalories;
@@ -2177,10 +2205,10 @@ async function saveMealEdit() {
 
     const mealData = {
         name: document.getElementById('editMealName').value.trim(),
-        calories: parseInt(document.getElementById('editMealCalories').value) || 0,
-        protein: parseFloat(document.getElementById('editMealProtein').value) || 0,
-        carbs: parseFloat(document.getElementById('editMealCarbs').value) || 0,
-        fat: parseFloat(document.getElementById('editMealFat').value) || 0
+        calories: parseIntNumber(document.getElementById('editMealCalories').value) || 0,
+        protein: parseNumber(document.getElementById('editMealProtein').value) || 0,
+        carbs: parseNumber(document.getElementById('editMealCarbs').value) || 0,
+        fat: parseNumber(document.getElementById('editMealFat').value) || 0
     };
 
     // Helper to reset button state
@@ -2499,10 +2527,10 @@ async function toggleMealFavorite() {
 
     const mealData = {
         name: mealName,
-        calories: parseInt(document.getElementById('editMealCalories').value) || 0,
-        protein: parseFloat(document.getElementById('editMealProtein').value) || 0,
-        carbs: parseFloat(document.getElementById('editMealCarbs').value) || 0,
-        fat: parseFloat(document.getElementById('editMealFat').value) || 0
+        calories: parseIntNumber(document.getElementById('editMealCalories').value) || 0,
+        protein: parseNumber(document.getElementById('editMealProtein').value) || 0,
+        carbs: parseNumber(document.getElementById('editMealCarbs').value) || 0,
+        fat: parseNumber(document.getElementById('editMealFat').value) || 0
     };
 
     try {
